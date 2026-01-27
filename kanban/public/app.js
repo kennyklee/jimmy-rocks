@@ -619,8 +619,23 @@ function escapeHtml(text) {
 }
 
 async function refreshBoard() {
+  // Save scroll positions before refresh
+  const scrollPositions = {};
+  document.querySelectorAll('.column-items').forEach(col => {
+    const colId = col.dataset.columnId;
+    if (colId) scrollPositions[colId] = col.scrollTop;
+  });
+  
   boardData = await api.getBoard();
   renderBoard();
+  
+  // Restore scroll positions after render
+  document.querySelectorAll('.column-items').forEach(col => {
+    const colId = col.dataset.columnId;
+    if (colId && scrollPositions[colId]) {
+      col.scrollTop = scrollPositions[colId];
+    }
+  });
 }
 
 // Check for deep link on page load
