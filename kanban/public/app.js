@@ -3,6 +3,17 @@ let boardData = null;
 let currentUser = 'kenny';
 let selectedItem = null;
 
+// Central user reference
+const USERS = {
+  kenny: { id: 'kenny', name: 'Kenny' },
+  jimmy: { id: 'jimmy', name: 'Jimmy' },
+  system: { id: 'system', name: 'System' }
+};
+
+function getUserName(userId) {
+  return USERS[userId]?.name || userId || 'Unknown';
+}
+
 // DOM Elements
 const board = document.getElementById('board');
 const userSelect = document.getElementById('user-select');
@@ -197,9 +208,7 @@ function renderComments(comments) {
       minute: '2-digit'
     });
     
-    const authorName = comment.author === 'kenny' ? 'Kenny' : 
-                       comment.author === 'jimmy' ? 'Jimmy' : 
-                       comment.author === 'system' ? 'System' : comment.author;
+    const authorName = getUserName(comment.author);
     
     return `
       <div class="comment ${comment.author === 'system' ? 'system-comment' : ''}">

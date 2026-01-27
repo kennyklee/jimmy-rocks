@@ -6,6 +6,16 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3333;
 const DATA_FILE = path.join(__dirname, 'data', 'board.json');
+
+// Central user reference
+const USERS = {
+  kenny: { id: 'kenny', name: 'Kenny' },
+  jimmy: { id: 'jimmy', name: 'Jimmy' }
+};
+
+function getUserName(userId) {
+  return USERS[userId]?.name || userId || 'Unknown';
+}
 const NOTIFICATIONS_FILE = path.join(__dirname, 'data', 'notifications.json');
 
 // Ensure data directory exists
@@ -283,7 +293,7 @@ app.put('/api/items/:id', (req, res) => {
         const newAssignee = updates.assignee;
         autoComments.push({
           id: `comment-${Date.now()}-assign`,
-          text: newAssignee ? `Assigned to ${newAssignee}` : 'Unassigned',
+          text: newAssignee ? `Assigned to ${getUserName(newAssignee)}` : 'Unassigned',
           author: 'system',
           createdAt: new Date().toISOString()
         });
@@ -302,7 +312,7 @@ app.put('/api/items/:id', (req, res) => {
         const newBlocked = updates.blockedBy;
         autoComments.push({
           id: `comment-${Date.now()}-block`,
-          text: newBlocked ? `Blocked by ${newBlocked}` : 'Unblocked',
+          text: newBlocked ? `Blocked by ${getUserName(newBlocked)}` : 'Unblocked',
           author: 'system',
           createdAt: new Date().toISOString()
         });
@@ -377,7 +387,7 @@ app.post('/api/items/:id/move', (req, res) => {
       item.comments = item.comments || [];
       item.comments.push({
         id: `comment-${Date.now()}-done`,
-        text: `Completed by ${completedBy}`,
+        text: `Completed by ${getUserName(completedBy)}`,
         author: 'system',
         createdAt: new Date().toISOString()
       });
