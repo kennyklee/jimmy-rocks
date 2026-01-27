@@ -347,7 +347,7 @@ async function handleNewItemSubmit(e) {
 
 async function handleDeleteItem() {
   if (!selectedItem) return;
-  if (!confirm('Delete this item?')) return;
+  if (!confirm(`Delete "${selectedItem.title}"?\n\nThis cannot be undone.`)) return;
   
   await api.deleteItem(selectedItem.id);
   closeItemDetailModal();
