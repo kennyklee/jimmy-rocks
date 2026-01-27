@@ -18,6 +18,8 @@ const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
 const detailBlocked = document.getElementById('detail-blocked');
+const tagSelect = document.getElementById('tag-select');
+const detailTags = document.getElementById('detail-tags');
 
 // API Functions
 const api = {
@@ -101,6 +103,9 @@ function renderItem(item) {
   const assigneeClass = item.assignee || 'unassigned';
   const blockedClass = item.blockedBy ? 'blocked' : '';
   const blockedBadge = item.blockedBy ? `<span class="blocked-badge" title="Blocked by ${item.blockedBy}">🚧</span>` : '';
+  const tagsHtml = (item.tags && item.tags.length > 0) 
+    ? `<div class="item-tags">${item.tags.map(t => `<span class="tag tag-${t.split('/')[0]}">${t}</span>`).join('')}</div>` 
+    : '';
   
   return `
     <div class="item ${blockedClass}" data-item-id="${item.id}" draggable="true">
@@ -109,6 +114,7 @@ function renderItem(item) {
         ${blockedBadge}
         <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
       </div>
+      ${tagsHtml}
       ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
       <div class="item-footer">
         <span class="priority-badge ${priorityClass}">${item.priority}</span>
@@ -183,6 +189,9 @@ function openItemDetail(item) {
   
   // Set blocked status
   detailBlocked.value = item.blockedBy || '';
+  
+  // Render tags
+  renderDetailTags(item.tags || []);
   
   // Find current column
   for (const col of boardData.columns) {
@@ -397,6 +406,58 @@ async function handleBlockedChange(e) {
   }
 }
 
+function renderDetailTags(tags) {
+  detailTags.innerHTML = tags.map(t => `
+    <span class="tag tag-${t.split('/')[0]}" data-tag="${t}">
+      ${t}
+      <button class="tag-remove" onclick="removeTag('${t}')">&times;</button>
+    </span>
+  `).join('');
+}
+
+async function addTag(tag) {
+  if (!selectedItem || !tag) return;
+  
+  const currentTags = selectedItem.tags || [];
+  if (currentTags.includes(tag)) return;
+  
+  const newTags = [...currentTags, tag];
+  await api.updateItem(selectedItem.id, { tags: newTags });
+  await refreshBoard();
+  
+  // Update selected item reference
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === selectedItem.id);
+    if (item) {
+      selectedItem = item;
+      renderDetailTags(item.tags || []);
+      break;
+    }
+  }
+}
+
+async function removeTag(tag) {
+  if (!selectedItem) return;
+  
+  const currentTags = selectedItem.tags || [];
+  const newTags = currentTags.filter(t => t !== tag);
+  await api.updateItem(selectedItem.id, { tags: newTags });
+  await refreshBoard();
+  
+  // Update selected item reference
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === selectedItem.id);
+    if (item) {
+      selectedItem = item;
+      renderDetailTags(item.tags || []);
+      break;
+    }
+  }
+}
+
+// Make removeTag available globally for onclick
+window.removeTag = removeTag;
+
 async function handleCommentSubmit(e) {
   e.preventDefault();
   if (!selectedItem) return;
@@ -457,6 +518,12 @@ async function init() {
   detailMoveColumn.addEventListener('change', handleMoveColumn);
   detailAssignee.addEventListener('change', handleAssigneeChange);
   detailBlocked.addEventListener('change', handleBlockedChange);
+  tagSelect.addEventListener('change', (e) => {
+    if (e.target.value) {
+      addTag(e.target.value);
+      e.target.value = '';
+    }
+  });
   commentForm.addEventListener('submit', handleCommentSubmit);
   
   // Close modals on overlay click

@@ -654,3 +654,73 @@ form {
   font-size: 14px;
   margin-right: 4px;
 }
+
+/* Tags */
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.tag-code {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+.tag-research {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.tag-schedule, .tag-email {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+.tag-design {
+  background: rgba(236, 72, 153, 0.15);
+  color: #ec4899;
+}
+
+.tag-admin {
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+}
+
+.detail-tags .tag {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  margin-left: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-input-container {
+  margin-bottom: 12px;
+}
