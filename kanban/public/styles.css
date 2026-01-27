@@ -915,3 +915,15 @@ form {
   margin-top: 8px;
   box-shadow: 0 0 12px rgba(167, 139, 250, 0.5);
 }
+
+/* Absolutely positioned drop indicator */
+.drop-indicator {
+  position: fixed !important;
+  height: 4px !important;
+  background: #a78bfa !important;
+  border-radius: 4px !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  display: none;
+  box-shadow: 0 0 8px #a78bfa, 0 0 16px #a78bfa !important;
+}

@@ -240,13 +240,21 @@ function handleDragEnd(e) {
   e.target.classList.remove('dragging');
   document.querySelectorAll('.column-items').forEach(col => {
     col.classList.remove('drag-over');
-    col.classList.remove('drop-at-end');
-    col.querySelectorAll('.drop-before').forEach(el => el.classList.remove('drop-before'));
   });
+  if (dropIndicator) dropIndicator.style.display = 'none';
 }
 
-// Track drop target
-let lastDropTarget = null;
+// Drop indicator element
+let dropIndicator = null;
+
+function ensureDropIndicator() {
+  if (!dropIndicator) {
+    dropIndicator = document.createElement('div');
+    dropIndicator.className = 'drop-indicator';
+    document.body.appendChild(dropIndicator);
+  }
+  return dropIndicator;
+}
 
 function handleDragOver(e) {
   e.preventDefault();
@@ -255,17 +263,31 @@ function handleDragOver(e) {
   
   const column = e.currentTarget;
   const afterElement = getDragAfterElement(column, e.clientY);
+  const indicator = ensureDropIndicator();
   
-  // Clear previous drop target styling
-  column.querySelectorAll('.drop-before').forEach(el => el.classList.remove('drop-before'));
-  column.classList.remove('drop-at-end');
+  // Position the indicator absolutely
+  const columnRect = column.getBoundingClientRect();
+  let indicatorY;
   
-  // Add styling to show where item will drop
   if (afterElement) {
-    afterElement.classList.add('drop-before');
+    const rect = afterElement.getBoundingClientRect();
+    indicatorY = rect.top - 4;
   } else {
-    column.classList.add('drop-at-end');
+    // End of column
+    const items = column.querySelectorAll('.item:not(.dragging)');
+    if (items.length > 0) {
+      const lastItem = items[items.length - 1];
+      const rect = lastItem.getBoundingClientRect();
+      indicatorY = rect.bottom + 4;
+    } else {
+      indicatorY = columnRect.top + 8;
+    }
   }
+  
+  indicator.style.display = 'block';
+  indicator.style.top = indicatorY + 'px';
+  indicator.style.left = (columnRect.left + 8) + 'px';
+  indicator.style.width = (columnRect.width - 16) + 'px';
 }
 
 // Get the element after which we should insert the dragged item
@@ -288,16 +310,14 @@ function handleDragLeave(e) {
   // Only remove if actually leaving the column (not entering a child)
   if (!e.currentTarget.contains(e.relatedTarget)) {
     e.currentTarget.classList.remove('drag-over');
-    e.currentTarget.classList.remove('drop-at-end');
-    e.currentTarget.querySelectorAll('.drop-before').forEach(el => el.classList.remove('drop-before'));
+    if (dropIndicator) dropIndicator.style.display = 'none';
   }
 }
 
 async function handleDrop(e) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
-  e.currentTarget.classList.remove('drop-at-end');
-  e.currentTarget.querySelectorAll('.drop-before').forEach(el => el.classList.remove('drop-before'));
+  if (dropIndicator) dropIndicator.style.display = 'none';
   
   if (!draggedItem) return;
   
