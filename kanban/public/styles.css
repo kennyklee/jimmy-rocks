@@ -1031,3 +1031,31 @@ form {
   line-height: 1.3;
   margin-top: 1px;
 }
+
+/* Search input */
+.search-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-left: 16px;
+  width: 180px;
+  transition: border-color 0.15s, width 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  width: 240px;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Hidden cards during search */
+.item.search-hidden {
+  display: none;
+}

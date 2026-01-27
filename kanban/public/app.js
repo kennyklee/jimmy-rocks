@@ -6,6 +6,60 @@ let selectedItem = null;
 // DOM Elements
 const board = document.getElementById('board');
 const userSelect = document.getElementById('user-select');
+const searchInput = document.getElementById('search-input');
+
+// Search functionality
+let searchTimeout = null;
+
+function filterCards(query) {
+  const q = query.toLowerCase().trim();
+  const items = document.querySelectorAll('.item');
+  
+  items.forEach(item => {
+    if (!q) {
+      item.classList.remove('search-hidden');
+      return;
+    }
+    
+    const itemId = item.dataset.itemId;
+    const itemData = findItemById(itemId);
+    
+    if (itemData) {
+      const titleMatch = itemData.title.toLowerCase().includes(q);
+      const descMatch = (itemData.description || '').toLowerCase().includes(q);
+      
+      if (titleMatch || descMatch) {
+        item.classList.remove('search-hidden');
+      } else {
+        item.classList.add('search-hidden');
+      }
+    }
+  });
+}
+
+function findItemById(id) {
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === id);
+    if (item) return item;
+  }
+  return null;
+}
+
+searchInput.addEventListener('input', (e) => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    filterCards(e.target.value);
+  }, 100);
+});
+
+// Clear search on Escape
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    searchInput.value = '';
+    filterCards('');
+    searchInput.blur();
+  }
+});
 const newItemBtn = document.getElementById('new-item-btn');
 const newItemModal = document.getElementById('new-item-modal');
 const newItemForm = document.getElementById('new-item-form');
