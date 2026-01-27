@@ -337,11 +337,24 @@ async function handleDrop(e) {
     }
   }
   
-  // Add animating class to target column for smooth transitions
+  // Animate cards parting before the drop
   const targetColumn = document.querySelector(`[data-column-id="${toColumnId}"]`);
+  const afterElement = getDragAfterElement(e.currentTarget, e.clientY);
+  
   if (targetColumn) {
-    targetColumn.classList.add('animating');
+    // Add gap where card will be inserted
+    if (afterElement) {
+      afterElement.style.transition = 'margin-top 0.2s ease-out';
+      afterElement.style.marginTop = '60px';
+    } else {
+      // Dropping at end - add padding to column
+      targetColumn.style.transition = 'padding-bottom 0.2s ease-out';
+      targetColumn.style.paddingBottom = '60px';
+    }
   }
+  
+  // Wait for gap animation
+  await new Promise(r => setTimeout(r, 200));
   
   await api.moveItem(itemId, toColumnId, position);
   await refreshBoard();
@@ -352,9 +365,6 @@ async function handleDrop(e) {
     droppedCard.classList.add('just-dropped');
     droppedCard.addEventListener('animationend', () => {
       droppedCard.classList.remove('just-dropped');
-      // Remove animating class after animation completes
-      const col = droppedCard.closest('.column-items');
-      if (col) col.classList.remove('animating');
     }, { once: true });
   }
 }
