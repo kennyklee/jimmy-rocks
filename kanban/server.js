@@ -495,6 +495,71 @@ app.post('/api/items/:id/comments', (req, res) => {
   res.status(404).json({ error: 'Item not found' });
 });
 
+// Subtasks
+app.post('/api/items/:id/subtasks', (req, res) => {
+  const { id } = req.params;
+  const { text } = req.body;
+  const data = readData();
+  
+  for (const column of data.columns) {
+    const item = column.items.find(i => i.id === id);
+    if (item) {
+      const subtask = {
+        id: `subtask-${Date.now()}`,
+        text,
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      item.subtasks = item.subtasks || [];
+      item.subtasks.push(subtask);
+      writeData(data);
+      return res.json(subtask);
+    }
+  }
+  
+  res.status(404).json({ error: 'Item not found' });
+});
+
+app.put('/api/items/:id/subtasks/:subtaskId', (req, res) => {
+  const { id, subtaskId } = req.params;
+  const { completed, text } = req.body;
+  const data = readData();
+  
+  for (const column of data.columns) {
+    const item = column.items.find(i => i.id === id);
+    if (item && item.subtasks) {
+      const subtask = item.subtasks.find(s => s.id === subtaskId);
+      if (subtask) {
+        if (typeof completed === 'boolean') subtask.completed = completed;
+        if (text !== undefined) subtask.text = text;
+        writeData(data);
+        return res.json(subtask);
+      }
+    }
+  }
+  
+  res.status(404).json({ error: 'Subtask not found' });
+});
+
+app.delete('/api/items/:id/subtasks/:subtaskId', (req, res) => {
+  const { id, subtaskId } = req.params;
+  const data = readData();
+  
+  for (const column of data.columns) {
+    const item = column.items.find(i => i.id === id);
+    if (item && item.subtasks) {
+      const idx = item.subtasks.findIndex(s => s.id === subtaskId);
+      if (idx !== -1) {
+        const removed = item.subtasks.splice(idx, 1)[0];
+        writeData(data);
+        return res.json(removed);
+      }
+    }
+  }
+  
+  res.status(404).json({ error: 'Subtask not found' });
+});
+
 // Get pending notifications (for Jimmy to poll)
 app.get('/api/notifications', (req, res) => {
   const data = readNotifications();

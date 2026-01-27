@@ -2,6 +2,80 @@
 let boardData = null;
 let currentUser = 'kenny';
 let selectedItem = null;
+let showArchivedDone = false; // Show tasks in Done older than 7 days
+let undoStack = []; // Stack of undoable actions
+
+// Toast notifications
+function showToast(type, title, message, duration = 5000) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const icon = type === 'error' ? '⚠️' : '✓';
+  
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      ${message ? `<div class="toast-message">${message}</div>` : ''}
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto-remove after duration
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 200);
+  }, duration);
+}
+
+// Undo functionality
+function pushUndo(action) {
+  undoStack.push(action);
+  // Keep only last 10 undoable actions
+  if (undoStack.length > 10) undoStack.shift();
+}
+
+async function performUndo() {
+  if (undoStack.length === 0) {
+    showToast('error', 'Nothing to undo', '');
+    return;
+  }
+  
+  const action = undoStack.pop();
+  
+  try {
+    if (action.type === 'move') {
+      // Move back to original column
+      await fetch(`/api/items/${action.itemId}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          toColumnId: action.fromColumn, 
+          position: action.fromPosition,
+          movedBy: currentUser 
+        })
+      });
+      showToast('success', 'Undone', `Moved back to ${action.fromColumn}`);
+    } else if (action.type === 'delete') {
+      // Recreate deleted item
+      const res = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action.itemData)
+      });
+      if (res.ok) {
+        showToast('success', 'Undone', `Restored "${action.itemData.title}"`);
+      }
+    }
+    
+    await refreshBoard();
+  } catch (err) {
+    showToast('error', 'Undo failed', err.message);
+  }
+}
 
 // Central user reference
 const USERS = {
@@ -141,74 +215,127 @@ const tagSelect = document.getElementById('tag-select');
 const detailTags = document.getElementById('detail-tags');
 
 // API Functions
+// API helper with error handling
+async function apiCall(url, options = {}, actionName = 'Request') {
+  try {
+    const res = await fetch(url, options);
+    const data = await res.json();
+    
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    
+    return data;
+  } catch (err) {
+    showToast('error', `${actionName} failed`, err.message);
+    throw err;
+  }
+}
+
 const api = {
   async getBoard() {
-    const res = await fetch('/api/board');
-    return res.json();
+    return apiCall('/api/board', {}, 'Load board');
   },
   
   async createItem(data) {
-    const res = await fetch('/api/items', {
+    return apiCall('/api/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
-    });
-    return res.json();
+    }, 'Create task');
   },
   
   async updateItem(itemId, data) {
-    const res = await fetch(`/api/items/${itemId}`, {
+    return apiCall(`/api/items/${itemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
-    });
-    return res.json();
+    }, 'Update task');
   },
   
   async moveItem(itemId, toColumnId, position, movedBy) {
-    const res = await fetch(`/api/items/${itemId}/move`, {
+    return apiCall(`/api/items/${itemId}/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ toColumnId, position, movedBy })
-    });
-    return res.json();
+    }, 'Move task');
   },
   
   async deleteItem(itemId) {
-    const res = await fetch(`/api/items/${itemId}`, {
+    return apiCall(`/api/items/${itemId}`, {
       method: 'DELETE'
-    });
-    return res.json();
+    }, 'Delete task');
   },
   
   async addComment(itemId, text, author) {
-    const res = await fetch(`/api/items/${itemId}/comments`, {
+    return apiCall(`/api/items/${itemId}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, author })
-    });
-    return res.json();
+    }, 'Add comment');
   }
 };
 
 // Render Functions
 function renderBoard() {
-  board.innerHTML = boardData.columns.map(column => `
+  const ARCHIVE_DAYS = 7;
+  const archiveCutoff = Date.now() - (ARCHIVE_DAYS * 24 * 60 * 60 * 1000);
+  
+  board.innerHTML = boardData.columns.map(column => {
+    let items = column.items;
+    let archivedCount = 0;
+    let archiveToggle = '';
+    
+    // For Done column, filter old items unless showArchivedDone is true
+    if (column.id === 'done') {
+      const recent = [];
+      const archived = [];
+      
+      for (const item of items) {
+        // Check when it entered Done column
+        const doneEntry = item.stageHistory?.find(s => s.column === 'done');
+        const doneTime = doneEntry ? new Date(doneEntry.enteredAt).getTime() : Date.now();
+        
+        if (doneTime < archiveCutoff) {
+          archived.push(item);
+        } else {
+          recent.push(item);
+        }
+      }
+      
+      archivedCount = archived.length;
+      items = showArchivedDone ? items : recent;
+      
+      if (archivedCount > 0) {
+        archiveToggle = `
+          <button class="archive-toggle" onclick="toggleArchived()">
+            ${showArchivedDone ? 'Hide' : 'Show'} ${archivedCount} archived
+          </button>`;
+      }
+    }
+    
+    return `
     <div class="column" data-column-id="${column.id}">
       <div class="column-header">
         <span class="column-title">${column.title}</span>
-        <span class="column-count">${column.items.length}</span>
+        <span class="column-count">${items.length}${archivedCount && !showArchivedDone ? ` (+${archivedCount})` : ''}</span>
+        ${archiveToggle}
       </div>
       <div class="column-items" data-column-id="${column.id}">
-        ${column.items.length === 0 
+        ${items.length === 0 
           ? '<div class="column-empty">No items</div>'
-          : column.items.map(item => renderItem(item)).join('')
+          : items.map(item => renderItem(item)).join('')
         }
       </div>
     </div>
-  `).join('');
+  `}).join('');
   
   setupDragAndDrop();
+}
+
+function toggleArchived() {
+  showArchivedDone = !showArchivedDone;
+  renderBoard();
 }
 
 function renderItem(item) {
@@ -229,6 +356,18 @@ function renderItem(item) {
   
   const ticketNum = item.number ? `#${item.number}` : '';
   
+  // Subtask progress
+  const subtasks = item.subtasks || [];
+  const subtaskCompleted = subtasks.filter(s => s.completed).length;
+  const subtaskTotal = subtasks.length;
+  const subtaskPct = subtaskTotal > 0 ? Math.round((subtaskCompleted / subtaskTotal) * 100) : 0;
+  const subtaskHtml = subtaskTotal > 0 
+    ? `<span class="item-subtasks">
+         <span class="progress-bar"><span class="progress-fill" style="width: ${subtaskPct}%"></span></span>
+         ${subtaskCompleted}/${subtaskTotal}
+       </span>` 
+    : '';
+  
   return `
     <div class="item ${blockedClass}" data-item-id="${item.id}" draggable="true">
       <div class="item-header">
@@ -241,6 +380,7 @@ function renderItem(item) {
       <div class="item-footer">
         <span class="priority-badge ${priorityClass}">${item.priority}</span>
         <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
+        ${subtaskHtml}
         ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ''}
       </div>
     </div>
@@ -275,6 +415,97 @@ function renderComments(comments) {
       </div>
     `;
   }).join('');
+}
+
+function renderSubtasks(subtasks) {
+  const list = document.getElementById('subtasks-list');
+  const countEl = document.getElementById('subtask-count');
+  
+  subtasks = subtasks || [];
+  const completed = subtasks.filter(s => s.completed).length;
+  const total = subtasks.length;
+  
+  countEl.textContent = total > 0 ? `(${completed}/${total})` : '';
+  
+  if (total === 0) {
+    list.innerHTML = '<div class="no-subtasks" style="color: var(--text-muted); font-size: 13px;">No checklist items</div>';
+    return;
+  }
+  
+  list.innerHTML = subtasks.map(subtask => `
+    <div class="subtask-item ${subtask.completed ? 'completed' : ''}" data-subtask-id="${subtask.id}">
+      <input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''} 
+             onchange="toggleSubtask('${subtask.id}', this.checked)">
+      <span class="subtask-text">${escapeHtml(subtask.text)}</span>
+      <button class="subtask-delete" onclick="deleteSubtask('${subtask.id}')">&times;</button>
+    </div>
+  `).join('');
+}
+
+async function toggleSubtask(subtaskId, completed) {
+  if (!selectedItem) return;
+  
+  try {
+    await fetch(`/api/items/${selectedItem.id}/subtasks/${subtaskId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed })
+    });
+    
+    // Update local state
+    const subtask = selectedItem.subtasks?.find(s => s.id === subtaskId);
+    if (subtask) subtask.completed = completed;
+    
+    renderSubtasks(selectedItem.subtasks);
+    await refreshBoard();
+  } catch (err) {
+    showToast('error', 'Failed to update subtask', err.message);
+  }
+}
+
+async function deleteSubtask(subtaskId) {
+  if (!selectedItem) return;
+  
+  try {
+    await fetch(`/api/items/${selectedItem.id}/subtasks/${subtaskId}`, {
+      method: 'DELETE'
+    });
+    
+    // Update local state
+    selectedItem.subtasks = selectedItem.subtasks?.filter(s => s.id !== subtaskId);
+    
+    renderSubtasks(selectedItem.subtasks);
+    await refreshBoard();
+  } catch (err) {
+    showToast('error', 'Failed to delete subtask', err.message);
+  }
+}
+
+async function handleAddSubtask(e) {
+  e.preventDefault();
+  if (!selectedItem) return;
+  
+  const input = document.getElementById('subtask-text');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  try {
+    const subtask = await apiCall(`/api/items/${selectedItem.id}/subtasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    }, 'Add subtask');
+    
+    // Update local state
+    selectedItem.subtasks = selectedItem.subtasks || [];
+    selectedItem.subtasks.push(subtask);
+    
+    input.value = '';
+    renderSubtasks(selectedItem.subtasks);
+    await refreshBoard();
+  } catch (err) {
+    // Error shown via toast
+  }
 }
 
 // Modal Functions
@@ -318,6 +549,7 @@ function openItemDetail(item) {
   }
   
   renderComments(item.comments);
+  renderSubtasks(item.subtasks);
   itemDetailModal.classList.add('active');
   updateUrlForTask(item.id);
   
@@ -445,6 +677,18 @@ async function handleDrop(e) {
   if (!draggedItem) return;
   
   const itemId = draggedItem.dataset.itemId;
+  
+  // Find original column and position for undo
+  let fromColumn = null;
+  let fromPosition = null;
+  for (const col of boardData.columns) {
+    const idx = col.items.findIndex(i => i.id === itemId);
+    if (idx !== -1) {
+      fromColumn = col.id;
+      fromPosition = idx;
+      break;
+    }
+  }
   const toColumnId = e.currentTarget.dataset.columnId;
   
   // Calculate position based on where item was dropped
@@ -485,6 +729,11 @@ async function handleDrop(e) {
   // Brief wait for gap animation
   await new Promise(r => setTimeout(r, 10));
   
+  // Store undo data before move
+  if (fromColumn !== toColumnId || fromPosition !== position) {
+    pushUndo({ type: 'move', itemId, fromColumn, fromPosition });
+  }
+  
   await api.moveItem(itemId, toColumnId, position, currentUser);
   await refreshBoard();
   
@@ -523,9 +772,13 @@ async function handleNewItemSubmit(e) {
     createdBy: currentUser
   };
   
-  await api.createItem(data);
-  closeNewItemModal();
-  await refreshBoard();
+  try {
+    await api.createItem(data);
+    closeNewItemModal();
+    await refreshBoard();
+  } catch (err) {
+    // Error already shown via toast
+  }
 }
 
 // Custom confirm modal
@@ -560,10 +813,42 @@ confirmModal.addEventListener('click', (e) => {
 async function handleDeleteItem() {
   if (!selectedItem) return;
   
+  // Store item data for undo
+  const itemToDelete = { ...selectedItem };
+  
+  // Find which column it's in
+  let itemColumn = null;
+  for (const col of boardData.columns) {
+    if (col.items.find(i => i.id === selectedItem.id)) {
+      itemColumn = col.id;
+      break;
+    }
+  }
+  
   showConfirm(`Delete "${selectedItem.title}"?`, async () => {
-    await api.deleteItem(selectedItem.id);
-    closeItemDetailModal();
-    await refreshBoard();
+    try {
+      // Push undo data
+      pushUndo({ 
+        type: 'delete', 
+        itemData: {
+          title: itemToDelete.title,
+          description: itemToDelete.description,
+          priority: itemToDelete.priority,
+          assignee: itemToDelete.assignee,
+          tags: itemToDelete.tags,
+          columnId: itemColumn,
+          createdBy: itemToDelete.createdBy
+        }
+      });
+      
+      await api.deleteItem(selectedItem.id);
+      closeItemDetailModal();
+      await refreshBoard();
+      
+      showToast('success', 'Deleted', 'Press Ctrl+Z to undo');
+    } catch (err) {
+      // Error already shown via toast
+    }
   });
 }
 
@@ -781,6 +1066,10 @@ async function init() {
   });
   commentForm.addEventListener('submit', handleCommentSubmit);
   
+  // Subtask form
+  const subtaskForm = document.getElementById('subtask-form');
+  subtaskForm.addEventListener('submit', handleAddSubtask);
+  
   // Contenteditable comment input with live @mention highlighting
   const commentInput = document.getElementById('comment-text');
   const postBtn = commentForm.querySelector('button[type="submit"]');
@@ -976,17 +1265,94 @@ async function init() {
     if (e.target === itemDetailModal) closeItemDetailModal();
   });
   
+  // Keyboard navigation state
+  let keyboardSelectedIndex = -1;
+  
+  function getAllVisibleCards() {
+    return Array.from(document.querySelectorAll('.item:not(.search-hidden)'));
+  }
+  
+  function updateKeyboardSelection(newIndex) {
+    const cards = getAllVisibleCards();
+    
+    // Clear previous selection
+    document.querySelectorAll('.item.keyboard-selected').forEach(el => {
+      el.classList.remove('keyboard-selected');
+    });
+    
+    if (newIndex < 0 || newIndex >= cards.length) {
+      keyboardSelectedIndex = -1;
+      return;
+    }
+    
+    keyboardSelectedIndex = newIndex;
+    const card = cards[newIndex];
+    card.classList.add('keyboard-selected');
+    card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  
+  function openKeyboardSelectedCard() {
+    const cards = getAllVisibleCards();
+    if (keyboardSelectedIndex >= 0 && keyboardSelectedIndex < cards.length) {
+      const card = cards[keyboardSelectedIndex];
+      const itemId = card.dataset.itemId;
+      for (const col of boardData.columns) {
+        const item = col.items.find(i => i.id === itemId);
+        if (item) {
+          openItemDetailModal(item);
+          break;
+        }
+      }
+    }
+  }
+  
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    // Skip if in input/textarea/contenteditable
+    const inInput = document.activeElement.tagName === 'INPUT' || 
+                    document.activeElement.tagName === 'TEXTAREA' ||
+                    document.activeElement.isContentEditable;
+    
+    // Skip if modal is open
+    const modalOpen = newItemModal.classList.contains('active') || 
+                      itemDetailModal.classList.contains('active');
+    
     if (e.key === 'Escape') {
       closeNewItemModal();
       closeItemDetailModal();
+      updateKeyboardSelection(-1); // Clear selection on Escape
     }
-    if (e.key === 'n' && !e.ctrlKey && !e.metaKey && 
-        document.activeElement.tagName !== 'INPUT' && 
-        document.activeElement.tagName !== 'TEXTAREA' &&
-        !document.activeElement.isContentEditable) {
+    
+    if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !inInput && !modalOpen) {
       openNewItemModal();
+    }
+    
+    // Ctrl+Z / Cmd+Z for undo
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey && !inInput) {
+      e.preventDefault();
+      performUndo();
+    }
+    
+    // Arrow key navigation (only when not in input and no modal open)
+    if (!inInput && !modalOpen) {
+      const cards = getAllVisibleCards();
+      
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        const newIndex = keyboardSelectedIndex < 0 ? 0 : Math.min(keyboardSelectedIndex + 1, cards.length - 1);
+        updateKeyboardSelection(newIndex);
+      }
+      
+      if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        const newIndex = keyboardSelectedIndex < 0 ? cards.length - 1 : Math.max(keyboardSelectedIndex - 1, 0);
+        updateKeyboardSelection(newIndex);
+      }
+      
+      if (e.key === 'Enter' && keyboardSelectedIndex >= 0) {
+        e.preventDefault();
+        openKeyboardSelectedCard();
+      }
     }
   });
   
@@ -1008,6 +1374,7 @@ async function init() {
         if (item) {
           selectedItem = item;
           renderComments(item.comments);
+          renderSubtasks(item.subtasks);
           break;
         }
       }

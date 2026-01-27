@@ -144,6 +144,17 @@
           </select>
         </div>
         
+        <div class="subtasks-section">
+          <h3 class="section-label">Checklist <span id="subtask-count"></span></h3>
+          <div class="subtasks-list" id="subtasks-list">
+            <!-- Subtasks rendered by JS -->
+          </div>
+          <form class="subtask-form" id="subtask-form">
+            <input type="text" id="subtask-text" placeholder="Add item..." class="subtask-input">
+            <button type="submit" class="btn btn-secondary btn-small">Add</button>
+          </form>
+        </div>
+        
         <div class="comments-section">
           <h3 class="section-label">Conversation</h3>
           <div class="comments-list" id="comments-list">
@@ -177,5 +188,7 @@
   </div>
 
   <script src="app.js"></script>
+  <!-- Toast container -->
+  <div id="toast-container"></div>
 </body>
 </html>
