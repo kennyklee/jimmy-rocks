@@ -250,6 +250,7 @@ app.post('/api/items', (req, res) => {
   data.nextTicketNumber = (data.nextTicketNumber || 1);
   const ticketNumber = data.nextTicketNumber++;
   
+  const createdBy = req.body.createdBy || 'unknown';
   const newItem = {
     id: `item-${Date.now()}`,
     number: ticketNumber,
@@ -258,8 +259,15 @@ app.post('/api/items', (req, res) => {
     priority: priority || 'medium',
     assignee: req.body.assignee || 'jimmy',
     createdAt: new Date().toISOString(),
-    createdBy: req.body.createdBy || 'unknown',
-    comments: [],
+    createdBy: createdBy,
+    comments: [
+      {
+        id: `comment-${Date.now()}-created`,
+        text: `Created by ${getUserName(createdBy)}`,
+        author: 'system',
+        createdAt: new Date().toISOString()
+      }
+    ],
     // Track stage history for metrics
     stageHistory: [
       { column: targetColumnId, enteredAt: new Date().toISOString() }
@@ -401,12 +409,23 @@ app.post('/api/items/:id/move', (req, res) => {
       }
     }
     
+    // Auto-comment when moved to Doing
+    if (toColumnId === 'doing') {
+      item.comments = item.comments || [];
+      item.comments.push({
+        id: `comment-${Date.now()}-doing`,
+        text: `Started by ${getUserName(movedBy || item.assignee)}`,
+        author: 'system',
+        createdAt: new Date().toISOString()
+      });
+    }
+    
     // Auto-comment when moved to Review
     if (toColumnId === 'review') {
       item.comments = item.comments || [];
       item.comments.push({
         id: `comment-${Date.now()}-review`,
-        text: 'Ready for review',
+        text: `Moved to review by ${getUserName(movedBy || item.assignee)}`,
         author: 'system',
         createdAt: new Date().toISOString()
       });
