@@ -594,3 +594,42 @@ form {
 .column-items.drag-over {
   background: rgba(99, 102, 241, 0.05);
 }
+
+/* Assignee Badge */
+.assignee-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.assignee-badge.kenny {
+  background: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+}
+
+.assignee-badge.jimmy {
+  background: rgba(167, 139, 250, 0.2);
+  color: #a78bfa;
+}
+
+.assignee-badge.unassigned {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* System comments */
+.system-comment {
+  background: var(--bg-primary);
+  border-left: 2px solid var(--text-muted);
+}
+
+.system-comment .comment-author {
+  color: var(--text-muted);
+  font-style: italic;
+}

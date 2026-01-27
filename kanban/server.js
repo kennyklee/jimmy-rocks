@@ -61,6 +61,7 @@ app.post('/api/items', (req, res) => {
     title,
     description: description || '',
     priority: priority || 'medium',
+    assignee: req.body.assignee || 'jimmy',  // Default to Jimmy
     createdAt: new Date().toISOString(),
     createdBy: req.body.createdBy || 'unknown',
     comments: []

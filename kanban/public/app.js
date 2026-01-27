@@ -16,6 +16,7 @@ const closeDetailModal = document.getElementById('close-detail-modal');
 const commentForm = document.getElementById('comment-form');
 const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
+const detailAssignee = document.getElementById('detail-assignee');
 
 // API Functions
 const api = {
@@ -27,6 +28,15 @@ const api = {
   async createItem(data) {
     const res = await fetch('/api/items', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+  
+  async updateItem(itemId, data) {
+    const res = await fetch(`/api/items/${itemId}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
@@ -86,16 +96,18 @@ function renderItem(item) {
     month: 'short', 
     day: 'numeric' 
   });
+  const assigneeInitial = item.assignee ? item.assignee[0].toUpperCase() : '?';
+  const assigneeClass = item.assignee || 'unassigned';
   
   return `
     <div class="item" data-item-id="${item.id}" draggable="true">
       <div class="item-header">
         <span class="item-title">${escapeHtml(item.title)}</span>
-        <span class="priority-badge ${priorityClass}">${item.priority}</span>
+        <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
       </div>
       ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
       <div class="item-footer">
-        <span>${createdDate} · ${item.createdBy}</span>
+        <span class="priority-badge ${priorityClass}">${item.priority}</span>
         ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ''}
       </div>
     </div>
@@ -118,10 +130,14 @@ function renderComments(comments) {
       minute: '2-digit'
     });
     
+    const authorName = comment.author === 'kenny' ? 'Kenny' : 
+                       comment.author === 'jimmy' ? 'Jimmy' : 
+                       comment.author === 'system' ? 'System' : comment.author;
+    
     return `
-      <div class="comment">
+      <div class="comment ${comment.author === 'system' ? 'system-comment' : ''}">
         <div class="comment-header">
-          <span class="comment-author ${comment.author}">${comment.author === 'kenny' ? 'Kenny' : 'Jimmy'}</span>
+          <span class="comment-author ${comment.author}">${authorName}</span>
           <span class="comment-time">${time}</span>
         </div>
         <div class="comment-text">${escapeHtml(comment.text)}</div>
@@ -157,6 +173,9 @@ function openItemDetail(item) {
     year: 'numeric'
   });
   document.getElementById('detail-author').textContent = `by ${item.createdBy}`;
+  
+  // Set assignee
+  detailAssignee.value = item.assignee || '';
   
   // Find current column
   for (const col of boardData.columns) {
@@ -252,6 +271,7 @@ async function handleNewItemSubmit(e) {
     title: document.getElementById('item-title').value,
     description: document.getElementById('item-description').value,
     priority: document.getElementById('item-priority').value,
+    assignee: document.getElementById('item-assignee').value,
     columnId: document.getElementById('item-column').value,
     createdBy: currentUser
   };
@@ -275,6 +295,23 @@ async function handleMoveColumn(e) {
   
   const toColumnId = e.target.value;
   await api.moveItem(selectedItem.id, toColumnId);
+  await refreshBoard();
+  
+  // Update selected item reference
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === selectedItem.id);
+    if (item) {
+      selectedItem = item;
+      break;
+    }
+  }
+}
+
+async function handleAssigneeChange(e) {
+  if (!selectedItem) return;
+  
+  const newAssignee = e.target.value || null;
+  await api.updateItem(selectedItem.id, { assignee: newAssignee });
   await refreshBoard();
   
   // Update selected item reference
@@ -345,6 +382,7 @@ async function init() {
   closeDetailModal.addEventListener('click', closeItemDetailModal);
   deleteItemBtn.addEventListener('click', handleDeleteItem);
   detailMoveColumn.addEventListener('change', handleMoveColumn);
+  detailAssignee.addEventListener('change', handleAssigneeChange);
   commentForm.addEventListener('submit', handleCommentSubmit);
   
   // Close modals on overlay click
