@@ -821,60 +821,48 @@ async function init() {
   function completeMention(element, name) {
     const currentMatch = mentionDropdown?.dataset.currentMatch || '@';
     const text = element.textContent;
-    const newText = text.replace(new RegExp(currentMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '@' + name + ' ');
     
-    // Set HTML with highlighted mention
-    const highlighted = newText.replace(/@(jimmy|kenny)/gi, '<span class="mention-highlight">@$1</span>');
-    element.innerHTML = highlighted;
+    // Find position of the @match and replace it
+    const matchPos = text.lastIndexOf(currentMatch);
+    if (matchPos === -1) return;
     
-    // Move cursor to end
+    const before = text.slice(0, matchPos);
+    const after = text.slice(matchPos + currentMatch.length);
+    
+    // Build HTML: text before + highlighted mention + space + text after
+    element.innerHTML = escapeHtml(before) + 
+      '<span class="mention-highlight">@' + name + '</span>' + 
+      '&nbsp;' + escapeHtml(after);
+    
+    // Move cursor after the space (after the mention span)
     element.focus();
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    range.collapse(false);
     const sel = window.getSelection();
+    const range = document.createRange();
+    
+    // Find the text node after the span (the nbsp)
+    const nodes = element.childNodes;
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].nodeType === Node.TEXT_NODE && i > 0) {
+        range.setStart(nodes[i], 0);
+        range.collapse(true);
+        break;
+      }
+    }
+    // If no text node after, go to end
+    if (range.startContainer === element) {
+      range.selectNodeContents(element);
+      range.collapse(false);
+    }
+    
     sel.removeAllRanges();
     sel.addRange(range);
     
     hideMentionDropdown();
   }
   
+  // Don't do live highlighting - only highlight on complete
   function highlightMentions(element) {
-    // Don't re-highlight if already has highlights (causes cursor jump)
-    if (element.querySelector('.mention-highlight')) return;
-    
-    const text = element.textContent;
-    if (!/@(jimmy|kenny)/i.test(text)) return;
-    
-    // Save cursor position
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    
-    const range = sel.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(element);
-    preCaretRange.setEnd(range.endContainer, range.endOffset);
-    const cursorPos = preCaretRange.toString().length;
-    
-    // Apply highlighting
-    element.innerHTML = text.replace(/@(jimmy|kenny)/gi, '<span class="mention-highlight">@$1</span>');
-    
-    // Restore cursor position
-    let charCount = 0;
-    const nodeIterator = document.createNodeIterator(element, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = nodeIterator.nextNode())) {
-      const nextCount = charCount + node.length;
-      if (cursorPos <= nextCount) {
-        const newRange = document.createRange();
-        newRange.setStart(node, cursorPos - charCount);
-        newRange.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-        break;
-      }
-      charCount = nextCount;
-    }
+    // Intentionally empty - highlighting only happens in completeMention
   }
   
   // Close modals on overlay click
