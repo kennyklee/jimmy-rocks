@@ -1007,3 +1007,17 @@ form {
   color: var(--text-secondary) !important;
   opacity: 1 !important;
 }
+
+/* Align title and ticket number */
+.item-header {
+  display: flex;
+  align-items: flex-start;
+}
+
+.item-title {
+  flex: 1;
+}
+
+.ticket-number {
+  line-height: 1.4;
+}
