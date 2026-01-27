@@ -1001,3 +1001,9 @@ form {
   font-weight: 500;
   margin-right: 8px;
 }
+
+/* Ticket number - match comment color */
+.ticket-number {
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+}
