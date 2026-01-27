@@ -17,7 +17,6 @@ const commentForm = document.getElementById('comment-form');
 const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
-const detailBlocked = document.getElementById('detail-blocked');
 const tagSelect = document.getElementById('tag-select');
 const detailTags = document.getElementById('detail-tags');
 
@@ -101,8 +100,9 @@ function renderItem(item) {
   });
   const assigneeInitial = item.assignee ? item.assignee[0].toUpperCase() : '?';
   const assigneeClass = item.assignee || 'unassigned';
-  const blockedClass = item.blockedBy ? 'blocked' : '';
-  const blockedBadge = item.blockedBy ? `<span class="blocked-badge" title="Blocked by ${item.blockedBy}">🚧</span>` : '';
+  const isBlocked = item.tags && item.tags.includes('blocked');
+  const blockedClass = isBlocked ? 'blocked' : '';
+  const blockedBadge = isBlocked ? `<span class="blocked-badge" title="Blocked">🚧</span>` : '';
   const tagsHtml = (item.tags && item.tags.length > 0) 
     ? `<div class="item-tags">${item.tags.map(t => `<span class="tag tag-${t.split('/')[0]}">${t}</span>`).join('')}</div>` 
     : '';
@@ -186,9 +186,6 @@ function openItemDetail(item) {
   
   // Set assignee
   detailAssignee.value = item.assignee || '';
-  
-  // Set blocked status
-  detailBlocked.value = item.blockedBy || '';
   
   // Render tags
   renderDetailTags(item.tags || []);
@@ -391,23 +388,6 @@ async function handleAssigneeChange(e) {
   }
 }
 
-async function handleBlockedChange(e) {
-  if (!selectedItem) return;
-  
-  const newBlocked = e.target.value || null;
-  await api.updateItem(selectedItem.id, { blockedBy: newBlocked });
-  await refreshBoard();
-  
-  // Update selected item reference
-  for (const col of boardData.columns) {
-    const item = col.items.find(i => i.id === selectedItem.id);
-    if (item) {
-      selectedItem = item;
-      break;
-    }
-  }
-}
-
 function renderDetailTags(tags) {
   detailTags.innerHTML = tags.map(t => `
     <span class="tag tag-${t.split('/')[0]}" data-tag="${t}">
@@ -549,7 +529,6 @@ async function init() {
   deleteItemBtn.addEventListener('click', handleDeleteItem);
   detailMoveColumn.addEventListener('change', handleMoveColumn);
   detailAssignee.addEventListener('change', handleAssigneeChange);
-  detailBlocked.addEventListener('change', handleBlockedChange);
   tagSelect.addEventListener('change', (e) => {
     if (e.target.value) {
       addTag(e.target.value);

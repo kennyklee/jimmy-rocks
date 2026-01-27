@@ -724,3 +724,21 @@ form {
 .tag-input-container {
   margin-bottom: 12px;
 }
+
+/* Blocked tag - red */
+.tag-blocked {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* code/enhancement - blue */
+.tag-code.enhancement {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+/* code/infra - cyan */
+.tag-code.infra {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06b6d4;
+}
