@@ -334,7 +334,7 @@ app.put('/api/items/:id', (req, res) => {
 // Move item to different column
 app.post('/api/items/:id/move', (req, res) => {
   const { id } = req.params;
-  const { toColumnId, position } = req.body;
+  const { toColumnId, position, movedBy } = req.body;
   const data = readData();
   
   let item = null;
@@ -373,16 +373,17 @@ app.post('/api/items/:id/move', (req, res) => {
     
     // Auto-comment when moved to Done
     if (toColumnId === 'done') {
+      const completedBy = movedBy || item.assignee || 'unknown';
       item.comments = item.comments || [];
       item.comments.push({
         id: `comment-${Date.now()}-done`,
-        text: `Completed by ${item.assignee || 'unknown'}`,
+        text: `Completed by ${completedBy}`,
         author: 'system',
         createdAt: new Date().toISOString()
       });
       
       // Notify Kenny when Jimmy completes a task
-      if (item.assignee === 'jimmy') {
+      if (completedBy === 'jimmy') {
         addNotification('jimmy_completed', {
           itemId: item.id,
           itemTitle: item.title

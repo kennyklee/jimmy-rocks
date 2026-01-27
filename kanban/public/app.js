@@ -99,11 +99,11 @@ const api = {
     return res.json();
   },
   
-  async moveItem(itemId, toColumnId, position) {
+  async moveItem(itemId, toColumnId, position, movedBy) {
     const res = await fetch(`/api/items/${itemId}/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toColumnId, position })
+      body: JSON.stringify({ toColumnId, position, movedBy })
     });
     return res.json();
   },
@@ -420,7 +420,7 @@ async function handleDrop(e) {
   // Brief wait for gap animation
   await new Promise(r => setTimeout(r, 10));
   
-  await api.moveItem(itemId, toColumnId, position);
+  await api.moveItem(itemId, toColumnId, position, currentUser);
   await refreshBoard();
   
   // Animate the dropped card
@@ -506,7 +506,7 @@ async function handleMoveColumn(e) {
   if (!selectedItem) return;
   
   const toColumnId = e.target.value;
-  await api.moveItem(selectedItem.id, toColumnId);
+  await api.moveItem(selectedItem.id, toColumnId, null, currentUser);
   await refreshBoard();
   
   // Update selected item reference
