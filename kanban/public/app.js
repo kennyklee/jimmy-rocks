@@ -338,6 +338,13 @@ async function handleDrop(e) {
     if (column) {
       const afterItemId = afterElement.dataset.itemId;
       position = column.items.findIndex(i => i.id === afterItemId);
+      
+      // Adjust for same-column reorder: if dragged item is above target, 
+      // the index will shift down by 1 after removal
+      const draggedIndex = column.items.findIndex(i => i.id === itemId);
+      if (draggedIndex !== -1 && draggedIndex < position) {
+        position--;
+      }
     }
   }
   
