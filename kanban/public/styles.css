@@ -1169,3 +1169,34 @@ form {
 .comment-form {
   position: relative;
 }
+
+/* Contenteditable comment input */
+.comment-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  min-height: 40px;
+  max-height: 150px;
+  overflow-y: auto;
+  outline: none;
+  flex: 1;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.comment-input:focus {
+  border-color: var(--accent);
+}
+
+.comment-input:empty:before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+}
+
+.comment-input .mention-highlight {
+  color: #a78bfa;
+  font-weight: 500;
+}

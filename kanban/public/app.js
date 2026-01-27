@@ -274,7 +274,7 @@ function openItemDetail(item) {
 function closeItemDetailModal() {
   itemDetailModal.classList.remove('active');
   selectedItem = null;
-  document.getElementById('comment-text').value = '';
+  document.getElementById('comment-text').textContent = '';
   updateUrlForTask(null);
 }
 
@@ -602,11 +602,12 @@ async function handleCommentSubmit(e) {
   e.preventDefault();
   if (!selectedItem) return;
   
-  const text = document.getElementById('comment-text').value.trim();
+  const commentEl = document.getElementById('comment-text');
+  const text = commentEl.textContent.trim();
   if (!text) return;
   
   await api.addComment(selectedItem.id, text, currentUser);
-  document.getElementById('comment-text').value = '';
+  commentEl.textContent = '';
   
   await refreshBoard();
   
@@ -739,32 +740,41 @@ async function init() {
     }
   });
   
-  // @mention autocomplete
+  // @mention autocomplete for contenteditable
   let mentionDropdown = null;
-  let mentionStartPos = -1;
   
   commentTextarea.addEventListener('input', (e) => {
-    const text = e.target.value;
-    const cursorPos = e.target.selectionStart;
+    const text = e.target.textContent;
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    
+    // Get cursor position
+    const range = selection.getRangeAt(0);
+    const preRange = range.cloneRange();
+    preRange.selectNodeContents(e.target);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    const cursorPos = preRange.toString().length;
     
     // Find @ before cursor
     const beforeCursor = text.slice(0, cursorPos);
     const atMatch = beforeCursor.match(/@(\w*)$/);
     
     if (atMatch) {
-      mentionStartPos = cursorPos - atMatch[0].length;
       const query = atMatch[1].toLowerCase();
       const matches = Object.values(USERS)
         .filter(u => u.id !== 'system' && u.name.toLowerCase().startsWith(query));
       
       if (matches.length > 0) {
-        showMentionDropdown(e.target, matches);
+        showMentionDropdown(e.target, matches, atMatch[0]);
       } else {
         hideMentionDropdown();
       }
     } else {
       hideMentionDropdown();
     }
+    
+    // Highlight existing @mentions
+    highlightMentions(e.target);
   });
   
   commentTextarea.addEventListener('keydown', (e) => {
@@ -780,11 +790,11 @@ async function init() {
     }
   });
   
-  function showMentionDropdown(textarea, matches) {
+  function showMentionDropdown(element, matches, currentMatch) {
     if (!mentionDropdown) {
       mentionDropdown = document.createElement('div');
       mentionDropdown.className = 'mention-dropdown';
-      textarea.parentNode.appendChild(mentionDropdown);
+      element.parentNode.appendChild(mentionDropdown);
     }
     
     mentionDropdown.innerHTML = matches.map(u => 
@@ -792,11 +802,12 @@ async function init() {
     ).join('');
     
     mentionDropdown.style.display = 'block';
+    mentionDropdown.dataset.currentMatch = currentMatch;
     
     // Click to select
     mentionDropdown.querySelectorAll('.mention-option').forEach(opt => {
       opt.addEventListener('click', () => {
-        completeMention(textarea, opt.dataset.name);
+        completeMention(element, opt.dataset.name);
       });
     });
   }
@@ -807,15 +818,43 @@ async function init() {
     }
   }
   
-  function completeMention(textarea, name) {
-    const text = textarea.value;
-    const before = text.slice(0, mentionStartPos);
-    const after = text.slice(textarea.selectionStart);
-    textarea.value = before + '@' + name + ' ' + after;
-    textarea.focus();
-    const newPos = mentionStartPos + name.length + 2;
-    textarea.setSelectionRange(newPos, newPos);
+  function completeMention(element, name) {
+    const currentMatch = mentionDropdown?.dataset.currentMatch || '@';
+    const text = element.textContent;
+    const newText = text.replace(new RegExp(currentMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '@' + name + ' ');
+    element.textContent = newText;
+    
+    // Move cursor to end
+    element.focus();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    
     hideMentionDropdown();
+    highlightMentions(element);
+  }
+  
+  function highlightMentions(element) {
+    const text = element.textContent;
+    // Only re-render if mentions exist and not already highlighted
+    if (/@(jimmy|kenny)/i.test(text) && !element.querySelector('.mention-highlight')) {
+      const selection = window.getSelection();
+      const cursorAtEnd = selection.rangeCount && selection.getRangeAt(0).startOffset === text.length;
+      
+      element.innerHTML = text.replace(/@(jimmy|kenny)/gi, '<span class="mention-highlight">@$1</span>');
+      
+      // Restore cursor to end
+      if (cursorAtEnd) {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
   }
   
   // Close modals on overlay click
