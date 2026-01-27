@@ -203,12 +203,14 @@ function openItemDetail(item) {
   
   renderComments(item.comments);
   itemDetailModal.classList.add('active');
+  updateUrlForTask(item.id);
 }
 
 function closeItemDetailModal() {
   itemDetailModal.classList.remove('active');
   selectedItem = null;
   document.getElementById('comment-text').value = '';
+  updateUrlForTask(null);
 }
 
 // Drag and Drop
@@ -493,6 +495,36 @@ async function refreshBoard() {
   renderBoard();
 }
 
+// Check for deep link on page load
+function checkDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const taskId = params.get('task');
+  
+  if (taskId) {
+    // Find the task and open it
+    for (const col of boardData.columns) {
+      const item = col.items.find(i => i.id === taskId);
+      if (item) {
+        openItemDetail(item);
+        return;
+      }
+    }
+    // Task not found - clear the parameter
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+// Update URL when opening/closing task detail
+function updateUrlForTask(taskId) {
+  if (taskId) {
+    const url = new URL(window.location);
+    url.searchParams.set('task', taskId);
+    window.history.pushState({}, '', url);
+  } else {
+    window.history.pushState({}, '', window.location.pathname);
+  }
+}
+
 // Initialize
 async function init() {
   // Load user preference
@@ -549,6 +581,9 @@ async function init() {
   
   // Load board
   await refreshBoard();
+  
+  // Check for deep link (open task from URL)
+  checkDeepLink();
   
   // Poll for updates every 10 seconds
   setInterval(async () => {
