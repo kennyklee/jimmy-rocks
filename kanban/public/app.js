@@ -339,7 +339,6 @@ async function handleDrop(e) {
   
   // Animate cards parting before the drop
   const targetColumn = document.querySelector(`[data-column-id="${toColumnId}"]`);
-  const afterElement = getDragAfterElement(e.currentTarget, e.clientY);
   
   if (targetColumn) {
     // Add gap where card will be inserted
