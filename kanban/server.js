@@ -236,8 +236,13 @@ app.post('/api/items', (req, res) => {
   const data = readData();
   const targetColumnId = columnId || 'todo';
   
+  // Auto-increment ticket number
+  data.nextTicketNumber = (data.nextTicketNumber || 1);
+  const ticketNumber = data.nextTicketNumber++;
+  
   const newItem = {
     id: `item-${Date.now()}`,
+    number: ticketNumber,
     title,
     description: description || '',
     priority: priority || 'medium',

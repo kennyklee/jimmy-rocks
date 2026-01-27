@@ -973,3 +973,23 @@ form {
 .item.just-dropped {
   animation: cardInserted 0.3s ease-out !important;
 }
+
+/* Ticket number - subtle, top right */
+.ticket-number {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+/* Assignee badge in footer */
+.item-footer .assignee-badge {
+  margin-left: auto;
+  margin-right: 4px;
+}
+
+.item-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

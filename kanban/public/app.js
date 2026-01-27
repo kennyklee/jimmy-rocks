@@ -107,17 +107,20 @@ function renderItem(item) {
     ? `<div class="item-tags">${item.tags.map(t => `<span class="tag tag-${t.split('/')[0]}">${t}</span>`).join('')}</div>` 
     : '';
   
+  const ticketNum = item.number ? `#${item.number}` : '';
+  
   return `
     <div class="item ${blockedClass}" data-item-id="${item.id}" draggable="true">
       <div class="item-header">
         <span class="item-title">${escapeHtml(item.title)}</span>
         ${blockedBadge}
-        <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
+        <span class="ticket-number">${ticketNum}</span>
       </div>
       ${tagsHtml}
       ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
       <div class="item-footer">
         <span class="priority-badge ${priorityClass}">${item.priority}</span>
+        <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
         ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ''}
       </div>
     </div>
