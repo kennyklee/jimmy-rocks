@@ -1110,3 +1110,26 @@ form {
 .column-items::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.3);
 }
+
+/* Modal scrollbar */
+.modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3);
+}
