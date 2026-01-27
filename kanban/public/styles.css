@@ -878,3 +878,18 @@ form {
 .drop-indicator::after {
   right: -6px !important;
 }
+
+/* Ensure drop indicator is above cards */
+.drop-indicator {
+  position: relative !important;
+  z-index: 100 !important;
+}
+
+.item {
+  position: relative;
+  z-index: 1;
+}
+
+.item.dragging {
+  z-index: 50;
+}
