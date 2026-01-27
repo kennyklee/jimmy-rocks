@@ -1086,3 +1086,27 @@ form {
 .comment.system-comment .comment-time {
   font-size: 10px;
 }
+
+/* Custom scrollbars for columns */
+.column-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.column-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column-items::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.column-items::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Firefox */
+.column-items {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
