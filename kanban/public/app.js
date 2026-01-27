@@ -339,6 +339,15 @@ async function handleDrop(e) {
   
   await api.moveItem(itemId, toColumnId, position);
   await refreshBoard();
+  
+  // Animate the dropped card
+  const droppedCard = document.querySelector(`[data-item-id="${itemId}"]`);
+  if (droppedCard) {
+    droppedCard.classList.add('just-dropped');
+    droppedCard.addEventListener('animationend', () => {
+      droppedCard.classList.remove('just-dropped');
+    }, { once: true });
+  }
 }
 
 function handleItemClick(e) {
