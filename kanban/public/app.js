@@ -343,17 +343,17 @@ async function handleDrop(e) {
   if (targetColumn) {
     // Add gap where card will be inserted
     if (afterElement) {
-      afterElement.style.transition = 'margin-top 0.2s ease-out';
+      afterElement.style.transition = 'margin-top 0.15s ease-out';
       afterElement.style.marginTop = '60px';
     } else {
       // Dropping at end - add padding to column
-      targetColumn.style.transition = 'padding-bottom 0.2s ease-out';
+      targetColumn.style.transition = 'padding-bottom 0.15s ease-out';
       targetColumn.style.paddingBottom = '60px';
     }
   }
   
-  // Wait for gap animation
-  await new Promise(r => setTimeout(r, 200));
+  // Brief wait for gap animation
+  await new Promise(r => setTimeout(r, 100));
   
   await api.moveItem(itemId, toColumnId, position);
   await refreshBoard();
