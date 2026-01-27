@@ -1059,3 +1059,30 @@ form {
 .item.search-hidden {
   display: none;
 }
+
+/* System comments - compact */
+.comment.system-comment {
+  padding: 6px 10px;
+  background: transparent;
+  border-left: 2px solid var(--border);
+  margin: 4px 0;
+}
+
+.comment.system-comment .comment-header {
+  margin-bottom: 0;
+}
+
+.comment.system-comment .comment-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.comment.system-comment .comment-author {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.comment.system-comment .comment-time {
+  font-size: 10px;
+}
