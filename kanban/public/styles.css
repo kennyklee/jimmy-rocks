@@ -635,7 +635,7 @@ form {
 }
 
 /* Drop indicator for reordering */
-.drop-indicator {
+.drop-indicator-old {
   height: 3px;
   background: var(--accent);
   border-radius: 2px;
@@ -823,4 +823,34 @@ form {
 
 .confirm-actions .btn {
   min-width: 80px;
+}
+
+/* Drop indicator line */
+.drop-indicator {
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  margin: 6px 0;
+  box-shadow: 0 0 8px var(--accent);
+  position: relative;
+}
+
+.drop-indicator::before,
+.drop-indicator::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.drop-indicator::before {
+  left: -4px;
+}
+
+.drop-indicator::after {
+  right: -4px;
 }

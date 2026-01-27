@@ -241,6 +241,20 @@ function handleDragEnd(e) {
   document.querySelectorAll('.column-items').forEach(col => {
     col.classList.remove('drag-over');
   });
+  if (dropIndicator) dropIndicator.remove();
+  lastDropTarget = null;
+}
+
+// Persistent drop indicator
+let dropIndicator = null;
+let lastDropTarget = null;
+
+function getOrCreateDropIndicator() {
+  if (!dropIndicator) {
+    dropIndicator = document.createElement('div');
+    dropIndicator.className = 'drop-indicator';
+  }
+  return dropIndicator;
 }
 
 function handleDragOver(e) {
@@ -248,22 +262,19 @@ function handleDragOver(e) {
   e.dataTransfer.dropEffect = 'move';
   e.currentTarget.classList.add('drag-over');
   
-  // Show drop indicator for reordering within column
   const column = e.currentTarget;
-  const items = [...column.querySelectorAll('.item:not(.dragging)')];
   const afterElement = getDragAfterElement(column, e.clientY);
+  const indicator = getOrCreateDropIndicator();
   
-  // Remove existing drop indicator
-  column.querySelectorAll('.drop-indicator').forEach(el => el.remove());
-  
-  // Add drop indicator
-  const indicator = document.createElement('div');
-  indicator.className = 'drop-indicator';
-  
-  if (afterElement) {
-    column.insertBefore(indicator, afterElement);
-  } else {
-    column.appendChild(indicator);
+  // Only move indicator if target changed (reduces DOM thrashing)
+  const newTarget = afterElement ? afterElement.dataset.itemId : 'end';
+  if (lastDropTarget !== newTarget || indicator.parentNode !== column) {
+    lastDropTarget = newTarget;
+    if (afterElement) {
+      column.insertBefore(indicator, afterElement);
+    } else {
+      column.appendChild(indicator);
+    }
   }
 }
 
@@ -284,14 +295,20 @@ function getDragAfterElement(column, y) {
 }
 
 function handleDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
-  e.currentTarget.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+  // Only remove if actually leaving the column (not entering a child)
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+    if (dropIndicator && dropIndicator.parentNode === e.currentTarget) {
+      dropIndicator.remove();
+    }
+  }
 }
 
 async function handleDrop(e) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
-  e.currentTarget.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+  if (dropIndicator) dropIndicator.remove();
+  lastDropTarget = null;
   
   if (!draggedItem) return;
   
