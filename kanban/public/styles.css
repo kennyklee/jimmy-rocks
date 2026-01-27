@@ -1087,9 +1087,15 @@ form {
   font-size: 10px;
 }
 
-/* Custom scrollbars for columns */
+
+/* Custom scrollbars */
+.column-items {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
 .column-items::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .column-items::-webkit-scrollbar-track {
@@ -1097,16 +1103,10 @@ form {
 }
 
 .column-items::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
 }
 
 .column-items::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
-
-/* Firefox */
-.column-items {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  background: rgba(255,255,255,0.3);
 }
