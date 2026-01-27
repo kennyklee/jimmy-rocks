@@ -537,6 +537,14 @@ async function init() {
   });
   commentForm.addEventListener('submit', handleCommentSubmit);
   
+  // Cmd+Enter (Mac) or Ctrl+Enter (Win/Linux) to submit comment
+  document.getElementById('comment-text').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      commentForm.dispatchEvent(new Event('submit'));
+    }
+  });
+  
   // Close modals on overlay click
   newItemModal.addEventListener('click', (e) => {
     if (e.target === newItemModal) closeNewItemModal();
