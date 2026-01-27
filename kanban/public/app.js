@@ -353,7 +353,7 @@ async function handleDrop(e) {
   }
   
   // Brief wait for gap animation
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise(r => setTimeout(r, 10));
   
   await api.moveItem(itemId, toColumnId, position);
   await refreshBoard();
