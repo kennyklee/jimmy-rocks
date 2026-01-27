@@ -893,3 +893,8 @@ form {
 .item.dragging {
   z-index: 50;
 }
+
+/* Section label - even smaller */
+.section-label {
+  font-size: 10px !important;
+}
