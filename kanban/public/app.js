@@ -274,7 +274,7 @@ function openItemDetail(item) {
 function closeItemDetailModal() {
   itemDetailModal.classList.remove('active');
   selectedItem = null;
-  document.getElementById('comment-text').textContent = '';
+  document.getElementById('comment-text').value = '';
   updateUrlForTask(null);
 }
 
@@ -603,11 +603,11 @@ async function handleCommentSubmit(e) {
   if (!selectedItem) return;
   
   const commentEl = document.getElementById('comment-text');
-  const text = commentEl.textContent.trim();
+  const text = commentEl.value.trim();
   if (!text) return;
   
   await api.addComment(selectedItem.id, text, currentUser);
-  commentEl.textContent = '';
+  commentEl.value = '';
   
   await refreshBoard();
   
@@ -740,41 +740,32 @@ async function init() {
     }
   });
   
-  // @mention autocomplete for contenteditable
+  // @mention autocomplete for textarea
   let mentionDropdown = null;
+  let mentionStartPos = -1;
   
   commentTextarea.addEventListener('input', (e) => {
-    const text = e.target.textContent;
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    
-    // Get cursor position
-    const range = selection.getRangeAt(0);
-    const preRange = range.cloneRange();
-    preRange.selectNodeContents(e.target);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const cursorPos = preRange.toString().length;
+    const text = e.target.value;
+    const cursorPos = e.target.selectionStart;
     
     // Find @ before cursor
     const beforeCursor = text.slice(0, cursorPos);
     const atMatch = beforeCursor.match(/@(\w*)$/);
     
     if (atMatch) {
+      mentionStartPos = cursorPos - atMatch[0].length;
       const query = atMatch[1].toLowerCase();
       const matches = Object.values(USERS)
         .filter(u => u.id !== 'system' && u.name.toLowerCase().startsWith(query));
       
       if (matches.length > 0) {
-        showMentionDropdown(e.target, matches, atMatch[0]);
+        showMentionDropdown(e.target, matches);
       } else {
         hideMentionDropdown();
       }
     } else {
       hideMentionDropdown();
     }
-    
-    // Highlight existing @mentions
-    highlightMentions(e.target);
   });
   
   commentTextarea.addEventListener('keydown', (e) => {
@@ -790,11 +781,11 @@ async function init() {
     }
   });
   
-  function showMentionDropdown(element, matches, currentMatch) {
+  function showMentionDropdown(textarea, matches) {
     if (!mentionDropdown) {
       mentionDropdown = document.createElement('div');
       mentionDropdown.className = 'mention-dropdown';
-      element.parentNode.appendChild(mentionDropdown);
+      textarea.parentNode.appendChild(mentionDropdown);
     }
     
     mentionDropdown.innerHTML = matches.map(u => 
@@ -802,12 +793,11 @@ async function init() {
     ).join('');
     
     mentionDropdown.style.display = 'block';
-    mentionDropdown.dataset.currentMatch = currentMatch;
     
     // Click to select
     mentionDropdown.querySelectorAll('.mention-option').forEach(opt => {
       opt.addEventListener('click', () => {
-        completeMention(element, opt.dataset.name);
+        completeMention(textarea, opt.dataset.name);
       });
     });
   }
@@ -818,40 +808,19 @@ async function init() {
     }
   }
   
-  function completeMention(element, name) {
-    const currentMatch = mentionDropdown?.dataset.currentMatch || '@';
-    const text = element.textContent;
+  function completeMention(textarea, name) {
+    const text = textarea.value;
+    const before = text.slice(0, mentionStartPos);
+    const after = text.slice(textarea.selectionStart);
     
-    // Find position of the @match and replace it
-    const matchPos = text.lastIndexOf(currentMatch);
-    if (matchPos === -1) return;
+    textarea.value = before + '@' + name + ' ' + after;
+    textarea.focus();
     
-    const before = text.slice(0, matchPos);
-    const after = text.slice(matchPos + currentMatch.length);
-    
-    // Build new content: before + @Name (purple) + space + after
-    // Using innerHTML to ensure clean structure
-    let html = '';
-    if (before) html += escapeHtml(before);
-    html += '<span class="mention-highlight">@' + escapeHtml(name) + '</span> ';
-    if (after) html += escapeHtml(after);
-    
-    element.innerHTML = html;
-    
-    // Move cursor to end
-    element.focus();
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    range.collapse(false);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
+    // Position cursor after the mention and space
+    const newPos = mentionStartPos + name.length + 2;
+    textarea.setSelectionRange(newPos, newPos);
     
     hideMentionDropdown();
-  }
-  
-  // Don't do live highlighting - only highlight on complete
-  function highlightMentions(element) {
-    // Intentionally empty - highlighting only happens in completeMention
   }
   
   // Close modals on overlay click
