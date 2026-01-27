@@ -389,35 +389,22 @@ app.post('/api/items/:id/move', (req, res) => {
       enteredAt: new Date().toISOString()
     });
     
-    // Auto-comment when moved to Done
-    if (toColumnId === 'done') {
-      const movedByUser = movedBy || item.assignee || 'unknown';
-      item.comments = item.comments || [];
-      item.comments.push({
-        id: `comment-${Date.now()}-done`,
-        text: `Moved to Done by ${getUserName(movedByUser)}`,
-        author: 'system',
-        createdAt: new Date().toISOString()
-      });
-      
-      // Notify Kenny when Jimmy completes a task
-      if (movedByUser === 'jimmy') {
-        addNotification('jimmy_completed', {
-          itemId: item.id,
-          itemTitle: item.title
-        });
-      }
-    }
+    // Auto-comment for any column move
+    const columnName = toColumnId.charAt(0).toUpperCase() + toColumnId.slice(1);
+    const movedByUser = movedBy || item.assignee || 'unknown';
+    item.comments = item.comments || [];
+    item.comments.push({
+      id: `comment-${Date.now()}-move`,
+      text: `Moved to ${columnName} by ${getUserName(movedByUser)}`,
+      author: 'system',
+      createdAt: new Date().toISOString()
+    });
     
-    // Auto-comment for column moves (Doing, Review)
-    if (toColumnId === 'doing' || toColumnId === 'review') {
-      const columnName = toColumnId.charAt(0).toUpperCase() + toColumnId.slice(1);
-      item.comments = item.comments || [];
-      item.comments.push({
-        id: `comment-${Date.now()}-move`,
-        text: `Moved to ${columnName} by ${getUserName(movedBy || item.assignee)}`,
-        author: 'system',
-        createdAt: new Date().toISOString()
+    // Notify Kenny when Jimmy moves to Done
+    if (toColumnId === 'done' && movedByUser === 'jimmy') {
+      addNotification('jimmy_completed', {
+        itemId: item.id,
+        itemTitle: item.title
       });
     }
   }
