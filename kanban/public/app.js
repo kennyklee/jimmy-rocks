@@ -17,6 +17,7 @@ const commentForm = document.getElementById('comment-form');
 const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
+const detailBlocked = document.getElementById('detail-blocked');
 
 // API Functions
 const api = {
@@ -98,11 +99,14 @@ function renderItem(item) {
   });
   const assigneeInitial = item.assignee ? item.assignee[0].toUpperCase() : '?';
   const assigneeClass = item.assignee || 'unassigned';
+  const blockedClass = item.blockedBy ? 'blocked' : '';
+  const blockedBadge = item.blockedBy ? `<span class="blocked-badge" title="Blocked by ${item.blockedBy}">🚧</span>` : '';
   
   return `
-    <div class="item" data-item-id="${item.id}" draggable="true">
+    <div class="item ${blockedClass}" data-item-id="${item.id}" draggable="true">
       <div class="item-header">
         <span class="item-title">${escapeHtml(item.title)}</span>
+        ${blockedBadge}
         <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
       </div>
       ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
@@ -176,6 +180,9 @@ function openItemDetail(item) {
   
   // Set assignee
   detailAssignee.value = item.assignee || '';
+  
+  // Set blocked status
+  detailBlocked.value = item.blockedBy || '';
   
   // Find current column
   for (const col of boardData.columns) {
@@ -373,6 +380,23 @@ async function handleAssigneeChange(e) {
   }
 }
 
+async function handleBlockedChange(e) {
+  if (!selectedItem) return;
+  
+  const newBlocked = e.target.value || null;
+  await api.updateItem(selectedItem.id, { blockedBy: newBlocked });
+  await refreshBoard();
+  
+  // Update selected item reference
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === selectedItem.id);
+    if (item) {
+      selectedItem = item;
+      break;
+    }
+  }
+}
+
 async function handleCommentSubmit(e) {
   e.preventDefault();
   if (!selectedItem) return;
@@ -432,6 +456,7 @@ async function init() {
   deleteItemBtn.addEventListener('click', handleDeleteItem);
   detailMoveColumn.addEventListener('change', handleMoveColumn);
   detailAssignee.addEventListener('change', handleAssigneeChange);
+  detailBlocked.addEventListener('change', handleBlockedChange);
   commentForm.addEventListener('submit', handleCommentSubmit);
   
   // Close modals on overlay click

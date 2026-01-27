@@ -642,3 +642,15 @@ form {
   margin: 4px 0;
   transition: opacity 0.15s;
 }
+
+/* Blocked items */
+.item.blocked {
+  border-color: #ef4444;
+  border-width: 2px;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.blocked-badge {
+  font-size: 14px;
+  margin-right: 4px;
+}
