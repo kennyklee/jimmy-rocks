@@ -270,7 +270,46 @@ app.put('/api/items/:id', (req, res) => {
   for (const column of data.columns) {
     const itemIndex = column.items.findIndex(i => i.id === id);
     if (itemIndex !== -1) {
-      column.items[itemIndex] = { ...column.items[itemIndex], ...updates };
+      const item = column.items[itemIndex];
+      const autoComments = [];
+      
+      // Check for assignment change
+      if ('assignee' in updates && updates.assignee !== item.assignee) {
+        const newAssignee = updates.assignee;
+        autoComments.push({
+          id: `comment-${Date.now()}-assign`,
+          text: newAssignee ? `Assigned to ${newAssignee}` : 'Unassigned',
+          author: 'system',
+          createdAt: new Date().toISOString()
+        });
+      }
+      
+      // Check for blocked status change
+      if ('blockedBy' in updates && updates.blockedBy !== item.blockedBy) {
+        const newBlocked = updates.blockedBy;
+        autoComments.push({
+          id: `comment-${Date.now()}-block`,
+          text: newBlocked ? `Blocked by ${newBlocked}` : 'Unblocked',
+          author: 'system',
+          createdAt: new Date().toISOString()
+        });
+        
+        // Notify if blocked by Kenny
+        if (newBlocked === 'kenny') {
+          addNotification('blocked_by_kenny', {
+            itemId: item.id,
+            itemTitle: item.title
+          });
+        }
+      }
+      
+      // Add auto-comments
+      if (autoComments.length > 0) {
+        item.comments = item.comments || [];
+        item.comments.push(...autoComments);
+      }
+      
+      column.items[itemIndex] = { ...item, ...updates };
       writeData(data);
       return res.json(column.items[itemIndex]);
     }
@@ -318,6 +357,28 @@ app.post('/api/items/:id/move', (req, res) => {
       column: toColumnId,
       enteredAt: new Date().toISOString()
     });
+    
+    // Auto-comment when moved to Done
+    if (toColumnId === 'done') {
+      item.comments = item.comments || [];
+      item.comments.push({
+        id: `comment-${Date.now()}-done`,
+        text: `Completed by ${item.assignee || 'unknown'}`,
+        author: 'system',
+        createdAt: new Date().toISOString()
+      });
+    }
+    
+    // Auto-comment when moved to Review
+    if (toColumnId === 'review') {
+      item.comments = item.comments || [];
+      item.comments.push({
+        id: `comment-${Date.now()}-review`,
+        text: 'Ready for review',
+        author: 'system',
+        createdAt: new Date().toISOString()
+      });
+    }
   }
   
   if (typeof position === 'number') {
