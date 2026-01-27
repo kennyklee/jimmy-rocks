@@ -538,10 +538,22 @@ async function init() {
   commentForm.addEventListener('submit', handleCommentSubmit);
   
   // Cmd+Enter (Mac) or Ctrl+Enter (Win/Linux) to submit comment
-  document.getElementById('comment-text').addEventListener('keydown', (e) => {
+  const commentTextarea = document.getElementById('comment-text');
+  const postBtn = commentForm.querySelector('button[type="submit"]');
+  
+  commentTextarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      commentForm.dispatchEvent(new Event('submit'));
+      postBtn.classList.add('pressed');
+    }
+  });
+  
+  commentTextarea.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter' || e.key === 'Meta' || e.key === 'Control') {
+      if (postBtn.classList.contains('pressed')) {
+        postBtn.classList.remove('pressed');
+        commentForm.dispatchEvent(new Event('submit'));
+      }
     }
   });
   
