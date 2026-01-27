@@ -232,22 +232,71 @@ function handleDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   e.currentTarget.classList.add('drag-over');
+  
+  // Show drop indicator for reordering within column
+  const column = e.currentTarget;
+  const items = [...column.querySelectorAll('.item:not(.dragging)')];
+  const afterElement = getDragAfterElement(column, e.clientY);
+  
+  // Remove existing drop indicator
+  column.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+  
+  // Add drop indicator
+  const indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  
+  if (afterElement) {
+    column.insertBefore(indicator, afterElement);
+  } else {
+    column.appendChild(indicator);
+  }
+}
+
+// Get the element after which we should insert the dragged item
+function getDragAfterElement(column, y) {
+  const items = [...column.querySelectorAll('.item:not(.dragging)')];
+  
+  return items.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function handleDragLeave(e) {
   e.currentTarget.classList.remove('drag-over');
+  e.currentTarget.querySelectorAll('.drop-indicator').forEach(el => el.remove());
 }
 
 async function handleDrop(e) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
+  e.currentTarget.querySelectorAll('.drop-indicator').forEach(el => el.remove());
   
   if (!draggedItem) return;
   
   const itemId = draggedItem.dataset.itemId;
   const toColumnId = e.currentTarget.dataset.columnId;
   
-  await api.moveItem(itemId, toColumnId);
+  // Calculate position based on where item was dropped
+  const afterElement = getDragAfterElement(e.currentTarget, e.clientY);
+  let position = null;
+  
+  if (afterElement) {
+    // Find the index of the element we're dropping before
+    const column = boardData.columns.find(c => c.id === toColumnId);
+    if (column) {
+      const afterItemId = afterElement.dataset.itemId;
+      position = column.items.findIndex(i => i.id === afterItemId);
+    }
+  }
+  
+  await api.moveItem(itemId, toColumnId, position);
   await refreshBoard();
 }
 

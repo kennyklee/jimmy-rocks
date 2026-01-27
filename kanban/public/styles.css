@@ -633,3 +633,12 @@ form {
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* Drop indicator for reordering */
+.drop-indicator {
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  margin: 4px 0;
+  transition: opacity 0.15s;
+}
