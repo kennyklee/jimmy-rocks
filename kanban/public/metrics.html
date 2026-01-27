@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metrics — Kenny & Jimmy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #141416;
+      --bg-tertiary: #1c1c1f;
+      --border-color: #27272a;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #6366f1;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .header a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    
+    .card-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    
+    .card-value {
+      font-size: 32px;
+      font-weight: 700;
+    }
+    
+    .card-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+    
+    .chart-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    
+    .chart-card h3 {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    
+    .chart-container {
+      height: 250px;
+    }
+    
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    
+    .table th, .table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .table th {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    
+    .table td {
+      font-size: 14px;
+    }
+    
+    .no-data {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📊 Metrics Dashboard</h1>
+    <a href="/">← Back to Board</a>
+  </div>
+  
+  <div class="grid" id="overview">
+    <div class="card">
+      <div class="card-label">Total Tasks</div>
+      <div class="card-value" id="total-tasks">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Completed</div>
+      <div class="card-value" id="completed-tasks">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">In Progress</div>
+      <div class="card-value" id="in-progress">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Avg Cycle Time</div>
+      <div class="card-value" id="avg-cycle-time">-</div>
+      <div class="card-sub">Todo → Done</div>
+    </div>
+  </div>
+  
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Tasks by Column</h3>
+      <div class="chart-container">
+        <canvas id="columnChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="chart-card">
+      <h3>Tasks by Assignee</h3>
+      <div class="chart-container">
+        <canvas id="assigneeChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="chart-card">
+      <h3>Avg Time per Stage (hours)</h3>
+      <div class="chart-container">
+        <canvas id="stageTimeChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="chart-card">
+      <h3>Throughput (tasks/day)</h3>
+      <div class="chart-container">
+        <canvas id="throughputChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="chart-card" style="margin-top: 24px;">
+    <h3>Completed Tasks - Cycle Time</h3>
+    <table class="table" id="cycle-time-table">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Cycle Time</th>
+        </tr>
+      </thead>
+      <tbody id="cycle-time-body">
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const chartColors = {
+      backlog: '#71717a',
+      todo: '#3b82f6',
+      doing: '#f59e0b',
+      review: '#a855f7',
+      done: '#22c55e',
+      kenny: '#60a5fa',
+      jimmy: '#a78bfa',
+      unassigned: '#52525b'
+    };
+    
+    let columnChart, assigneeChart, stageTimeChart, throughputChart;
+    
+    async function loadMetrics() {
+      const res = await fetch('/api/metrics');
+      const metrics = await res.json();
+      
+      // Overview cards
+      document.getElementById('total-tasks').textContent = metrics.totalTasks;
+      document.getElementById('completed-tasks').textContent = metrics.completedTasks;
+      document.getElementById('in-progress').textContent = metrics.tasksInProgress;
+      document.getElementById('avg-cycle-time').textContent = 
+        metrics.avgCycleTimeHours ? `${metrics.avgCycleTimeHours}h` : 'N/A';
+      
+      // Column chart
+      const columnData = {
+        labels: ['Backlog', 'Todo', 'Doing', 'Review', 'Done'],
+        datasets: [{
+          data: [
+            metrics.tasksByColumn.backlog || 0,
+            metrics.tasksByColumn.todo || 0,
+            metrics.tasksByColumn.doing || 0,
+            metrics.tasksByColumn.review || 0,
+            metrics.tasksByColumn.done || 0
+          ],
+          backgroundColor: [
+            chartColors.backlog,
+            chartColors.todo,
+            chartColors.doing,
+            chartColors.review,
+            chartColors.done
+          ]
+        }]
+      };
+      
+      if (columnChart) columnChart.destroy();
+      columnChart = new Chart(document.getElementById('columnChart'), {
+        type: 'doughnut',
+        data: columnData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { color: '#a1a1aa' } } }
+        }
+      });
+      
+      // Assignee chart
+      const assigneeData = {
+        labels: ['Kenny', 'Jimmy', 'Unassigned'],
+        datasets: [{
+          data: [
+            metrics.tasksByAssignee.kenny,
+            metrics.tasksByAssignee.jimmy,
+            metrics.tasksByAssignee.unassigned
+          ],
+          backgroundColor: [chartColors.kenny, chartColors.jimmy, chartColors.unassigned]
+        }]
+      };
+      
+      if (assigneeChart) assigneeChart.destroy();
+      assigneeChart = new Chart(document.getElementById('assigneeChart'), {
+        type: 'doughnut',
+        data: assigneeData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { color: '#a1a1aa' } } }
+        }
+      });
+      
+      // Stage time chart
+      const stages = Object.keys(metrics.avgTimePerStage);
+      const stageTimeData = {
+        labels: stages.map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+        datasets: [{
+          label: 'Avg Hours',
+          data: stages.map(s => metrics.avgTimePerStage[s].avgHours),
+          backgroundColor: stages.map(s => chartColors[s] || '#6366f1')
+        }]
+      };
+      
+      if (stageTimeChart) stageTimeChart.destroy();
+      stageTimeChart = new Chart(document.getElementById('stageTimeChart'), {
+        type: 'bar',
+        data: stageTimeData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#71717a' }, grid: { color: '#27272a' } },
+            x: { ticks: { color: '#71717a' }, grid: { display: false } }
+          }
+        }
+      });
+      
+      // Throughput chart
+      const days = Object.keys(metrics.throughputByDay).sort();
+      const throughputData = {
+        labels: days.map(d => d.slice(5)), // MM-DD
+        datasets: [{
+          label: 'Tasks Completed',
+          data: days.map(d => metrics.throughputByDay[d]),
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          fill: true,
+          tension: 0.3
+        }]
+      };
+      
+      if (throughputChart) throughputChart.destroy();
+      throughputChart = new Chart(document.getElementById('throughputChart'), {
+        type: 'line',
+        data: throughputData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#71717a' }, grid: { color: '#27272a' } },
+            x: { ticks: { color: '#71717a' }, grid: { display: false } }
+          }
+        }
+      });
+      
+      // Cycle time table
+      const tbody = document.getElementById('cycle-time-body');
+      if (metrics.cycleTimes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" class="no-data">No completed tasks with cycle data yet</td></tr>';
+      } else {
+        tbody.innerHTML = metrics.cycleTimes.map(ct => `
+          <tr>
+            <td>${ct.title}</td>
+            <td>${ct.cycleTimeHours}h</td>
+          </tr>
+        `).join('');
+      }
+    }
+    
+    loadMetrics();
+    setInterval(loadMetrics, 30000);
+  </script>
+</body>
+</html>

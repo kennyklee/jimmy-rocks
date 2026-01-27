@@ -44,6 +44,47 @@ function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
+// Calculate time spent in each stage for an item
+function calculateStageTime(item) {
+  if (!item.stageHistory || item.stageHistory.length === 0) {
+    return {};
+  }
+  
+  const stageTimes = {};
+  const history = item.stageHistory;
+  
+  for (let i = 0; i < history.length; i++) {
+    const entry = history[i];
+    const nextEntry = history[i + 1];
+    const endTime = nextEntry ? new Date(nextEntry.enteredAt) : new Date();
+    const startTime = new Date(entry.enteredAt);
+    const duration = endTime - startTime; // milliseconds
+    
+    if (!stageTimes[entry.column]) {
+      stageTimes[entry.column] = 0;
+    }
+    stageTimes[entry.column] += duration;
+  }
+  
+  return stageTimes;
+}
+
+// Calculate cycle time (todo -> done) in milliseconds
+function calculateCycleTime(item) {
+  if (!item.stageHistory || item.stageHistory.length === 0) {
+    return null;
+  }
+  
+  const todoEntry = item.stageHistory.find(h => h.column === 'todo');
+  const doneEntry = item.stageHistory.find(h => h.column === 'done');
+  
+  if (!todoEntry || !doneEntry) {
+    return null;
+  }
+  
+  return new Date(doneEntry.enteredAt) - new Date(todoEntry.enteredAt);
+}
+
 // API Routes
 
 // Get board state
@@ -51,23 +92,136 @@ app.get('/api/board', (req, res) => {
   res.json(readData());
 });
 
+// Get metrics
+app.get('/api/metrics', (req, res) => {
+  const data = readData();
+  const allItems = [];
+  const completedItems = [];
+  
+  // Gather all items
+  for (const col of data.columns) {
+    for (const item of col.items) {
+      allItems.push({ ...item, currentColumn: col.id });
+      if (col.id === 'done') {
+        completedItems.push(item);
+      }
+    }
+  }
+  
+  // Calculate metrics
+  const metrics = {
+    // Overview
+    totalTasks: allItems.length,
+    completedTasks: completedItems.length,
+    tasksInProgress: data.columns.find(c => c.id === 'doing')?.items.length || 0,
+    tasksInReview: data.columns.find(c => c.id === 'review')?.items.length || 0,
+    
+    // Cycle time (for completed tasks)
+    avgCycleTime: null,
+    cycleTimes: [],
+    
+    // Time in each stage (for completed tasks)
+    avgTimePerStage: {},
+    
+    // Throughput (tasks completed per day)
+    throughputByDay: {},
+    
+    // Tasks by column
+    tasksByColumn: {},
+    
+    // Tasks by assignee
+    tasksByAssignee: { kenny: 0, jimmy: 0, unassigned: 0 }
+  };
+  
+  // Tasks by column
+  for (const col of data.columns) {
+    metrics.tasksByColumn[col.id] = col.items.length;
+  }
+  
+  // Tasks by assignee
+  for (const item of allItems) {
+    if (item.assignee === 'kenny') metrics.tasksByAssignee.kenny++;
+    else if (item.assignee === 'jimmy') metrics.tasksByAssignee.jimmy++;
+    else metrics.tasksByAssignee.unassigned++;
+  }
+  
+  // Cycle times for completed tasks
+  const cycleTimes = [];
+  const stageTimeTotals = {};
+  const stageTimeCounts = {};
+  
+  for (const item of completedItems) {
+    const cycleTime = calculateCycleTime(item);
+    if (cycleTime !== null) {
+      cycleTimes.push({
+        id: item.id,
+        title: item.title,
+        cycleTime,
+        cycleTimeHours: Math.round(cycleTime / (1000 * 60 * 60) * 10) / 10
+      });
+    }
+    
+    // Stage times
+    const stageTimes = calculateStageTime(item);
+    for (const [stage, time] of Object.entries(stageTimes)) {
+      if (!stageTimeTotals[stage]) {
+        stageTimeTotals[stage] = 0;
+        stageTimeCounts[stage] = 0;
+      }
+      stageTimeTotals[stage] += time;
+      stageTimeCounts[stage]++;
+    }
+    
+    // Throughput by completion day
+    const doneEntry = item.stageHistory?.find(h => h.column === 'done');
+    if (doneEntry) {
+      const day = doneEntry.enteredAt.split('T')[0];
+      metrics.throughputByDay[day] = (metrics.throughputByDay[day] || 0) + 1;
+    }
+  }
+  
+  // Average cycle time
+  if (cycleTimes.length > 0) {
+    const totalCycleTime = cycleTimes.reduce((sum, ct) => sum + ct.cycleTime, 0);
+    metrics.avgCycleTime = totalCycleTime / cycleTimes.length;
+    metrics.avgCycleTimeHours = Math.round(metrics.avgCycleTime / (1000 * 60 * 60) * 10) / 10;
+  }
+  metrics.cycleTimes = cycleTimes;
+  
+  // Average time per stage
+  for (const [stage, total] of Object.entries(stageTimeTotals)) {
+    metrics.avgTimePerStage[stage] = {
+      avgMs: Math.round(total / stageTimeCounts[stage]),
+      avgHours: Math.round(total / stageTimeCounts[stage] / (1000 * 60 * 60) * 10) / 10,
+      count: stageTimeCounts[stage]
+    };
+  }
+  
+  res.json(metrics);
+});
+
 // Create new item
 app.post('/api/items', (req, res) => {
   const { title, description, priority, columnId } = req.body;
   const data = readData();
+  const targetColumnId = columnId || 'todo';
   
   const newItem = {
     id: `item-${Date.now()}`,
     title,
     description: description || '',
     priority: priority || 'medium',
-    assignee: req.body.assignee || 'jimmy',  // Default to Jimmy
+    assignee: req.body.assignee || 'jimmy',
     createdAt: new Date().toISOString(),
     createdBy: req.body.createdBy || 'unknown',
-    comments: []
+    comments: [],
+    // Track stage history for metrics
+    stageHistory: [
+      { column: targetColumnId, enteredAt: new Date().toISOString() }
+    ]
   };
   
-  const column = data.columns.find(c => c.id === (columnId || 'todo'));
+  const column = data.columns.find(c => c.id === targetColumnId);
   if (column) {
     column.items.push(newItem);
     writeData(data);
@@ -121,9 +275,19 @@ app.post('/api/items/:id/move', (req, res) => {
   // Add to new column
   const toColumn = data.columns.find(c => c.id === toColumnId);
   if (!toColumn) {
-    // Put it back if target column not found
     fromColumn.items.push(item);
     return res.status(400).json({ error: 'Invalid target column' });
+  }
+  
+  // Track stage history (only if actually changing columns)
+  if (fromColumn.id !== toColumnId) {
+    if (!item.stageHistory) {
+      item.stageHistory = [];
+    }
+    item.stageHistory.push({
+      column: toColumnId,
+      enteredAt: new Date().toISOString()
+    });
   }
   
   if (typeof position === 'number') {
