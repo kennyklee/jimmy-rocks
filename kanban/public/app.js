@@ -216,7 +216,7 @@ function renderComments(comments) {
           <span class="comment-author ${comment.author}">${authorName}</span>
           <span class="comment-time">${time}</span>
         </div>
-        <div class="comment-text">${escapeHtml(comment.text)}</div>
+        <div class="comment-text">${formatMentions(comment.text)}</div>
       </div>
     `;
   }).join('');
@@ -625,6 +625,12 @@ async function handleCommentSubmit(e) {
 }
 
 // Utility Functions
+// Format text with @mentions highlighted
+function formatMentions(text) {
+  const escaped = escapeHtml(text);
+  return escaped.replace(/@(jimmy|kenny)/gi, '<span class="mention">@$1</span>');
+}
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -732,6 +738,85 @@ async function init() {
       }
     }
   });
+  
+  // @mention autocomplete
+  let mentionDropdown = null;
+  let mentionStartPos = -1;
+  
+  commentTextarea.addEventListener('input', (e) => {
+    const text = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    
+    // Find @ before cursor
+    const beforeCursor = text.slice(0, cursorPos);
+    const atMatch = beforeCursor.match(/@(\w*)$/);
+    
+    if (atMatch) {
+      mentionStartPos = cursorPos - atMatch[0].length;
+      const query = atMatch[1].toLowerCase();
+      const matches = Object.values(USERS)
+        .filter(u => u.id !== 'system' && u.name.toLowerCase().startsWith(query));
+      
+      if (matches.length > 0) {
+        showMentionDropdown(e.target, matches);
+      } else {
+        hideMentionDropdown();
+      }
+    } else {
+      hideMentionDropdown();
+    }
+  });
+  
+  commentTextarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && mentionDropdown && mentionDropdown.style.display !== 'none') {
+      e.preventDefault();
+      const firstOption = mentionDropdown.querySelector('.mention-option');
+      if (firstOption) {
+        completeMention(commentTextarea, firstOption.dataset.name);
+      }
+    }
+    if (e.key === 'Escape') {
+      hideMentionDropdown();
+    }
+  });
+  
+  function showMentionDropdown(textarea, matches) {
+    if (!mentionDropdown) {
+      mentionDropdown = document.createElement('div');
+      mentionDropdown.className = 'mention-dropdown';
+      textarea.parentNode.appendChild(mentionDropdown);
+    }
+    
+    mentionDropdown.innerHTML = matches.map(u => 
+      `<div class="mention-option" data-name="${u.name}">@${u.name}</div>`
+    ).join('');
+    
+    mentionDropdown.style.display = 'block';
+    
+    // Click to select
+    mentionDropdown.querySelectorAll('.mention-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        completeMention(textarea, opt.dataset.name);
+      });
+    });
+  }
+  
+  function hideMentionDropdown() {
+    if (mentionDropdown) {
+      mentionDropdown.style.display = 'none';
+    }
+  }
+  
+  function completeMention(textarea, name) {
+    const text = textarea.value;
+    const before = text.slice(0, mentionStartPos);
+    const after = text.slice(textarea.selectionStart);
+    textarea.value = before + '@' + name + ' ' + after;
+    textarea.focus();
+    const newPos = mentionStartPos + name.length + 2;
+    textarea.setSelectionRange(newPos, newPos);
+    hideMentionDropdown();
+  }
   
   // Close modals on overlay click
   newItemModal.addEventListener('click', (e) => {

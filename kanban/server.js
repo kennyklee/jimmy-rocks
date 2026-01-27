@@ -455,8 +455,20 @@ app.post('/api/items/:id/comments', (req, res) => {
       item.comments.push(comment);
       writeData(data);
       
+      // Create notification if @jimmy is mentioned
+      if (text.toLowerCase().includes('@jimmy')) {
+        addNotification('mention_jimmy', {
+          itemId: item.id,
+          itemNumber: item.number,
+          itemTitle: item.title,
+          commentId: comment.id,
+          commentText: text,
+          commentedAt: comment.createdAt,
+          author: author
+        });
+      }
       // Create notification if Kenny comments (notify Jimmy)
-      if (author === 'kenny') {
+      else if (author === 'kenny') {
         addNotification('kenny_comment', {
           itemId: item.id,
           itemTitle: item.title,

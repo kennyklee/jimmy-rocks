@@ -1133,3 +1133,39 @@ form {
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.3);
 }
+
+/* @mentions */
+.mention {
+  color: #a78bfa;
+  font-weight: 500;
+}
+
+/* Mention autocomplete dropdown */
+.mention-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 100;
+  display: none;
+}
+
+.mention-option {
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #a78bfa;
+  font-size: 13px;
+}
+
+.mention-option:hover {
+  background: var(--bg-tertiary);
+}
+
+.comment-form {
+  position: relative;
+}
