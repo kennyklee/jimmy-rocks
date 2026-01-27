@@ -12,15 +12,19 @@ if (!fs.existsSync(path.join(__dirname, 'data'))) {
   fs.mkdirSync(path.join(__dirname, 'data'));
 }
 
+// Column definitions
+const COLUMNS = [
+  { id: 'backlog', title: 'Backlog' },
+  { id: 'todo', title: 'Todo' },
+  { id: 'doing', title: 'Doing' },
+  { id: 'review', title: 'Review' },
+  { id: 'done', title: 'Done' }
+];
+
 // Initialize data file if doesn't exist
 if (!fs.existsSync(DATA_FILE)) {
   const initialData = {
-    columns: [
-      { id: 'backlog', title: 'Backlog', items: [] },
-      { id: 'todo', title: 'To Do', items: [] },
-      { id: 'in-progress', title: 'In Progress', items: [] },
-      { id: 'done', title: 'Done', items: [] }
-    ],
+    columns: COLUMNS.map(col => ({ ...col, items: [] })),
     lastUpdated: new Date().toISOString()
   };
   fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
@@ -62,7 +66,7 @@ app.post('/api/items', (req, res) => {
     comments: []
   };
   
-  const column = data.columns.find(c => c.id === (columnId || 'backlog'));
+  const column = data.columns.find(c => c.id === (columnId || 'todo'));
   if (column) {
     column.items.push(newItem);
     writeData(data);
