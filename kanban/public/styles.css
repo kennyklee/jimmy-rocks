@@ -777,3 +777,18 @@ form {
   color: #ef4444;
   opacity: 1;
 }
+
+/* Section label - smaller */
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Delete link - bigger */
+.btn-link-danger {
+  font-size: 14px;
+}
