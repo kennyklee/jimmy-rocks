@@ -282,6 +282,14 @@ app.put('/api/items/:id', (req, res) => {
           author: 'system',
           createdAt: new Date().toISOString()
         });
+        
+        // Notify when assigned to Kenny
+        if (newAssignee === 'kenny') {
+          addNotification('assigned_to_kenny', {
+            itemId: item.id,
+            itemTitle: item.title
+          });
+        }
       }
       
       // Check for blocked status change
@@ -367,6 +375,14 @@ app.post('/api/items/:id/move', (req, res) => {
         author: 'system',
         createdAt: new Date().toISOString()
       });
+      
+      // Notify Kenny when Jimmy completes a task
+      if (item.assignee === 'jimmy') {
+        addNotification('jimmy_completed', {
+          itemId: item.id,
+          itemTitle: item.title
+        });
+      }
     }
     
     // Auto-comment when moved to Review
