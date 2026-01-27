@@ -854,3 +854,27 @@ form {
 .drop-indicator::after {
   right: -4px;
 }
+
+/* Drop indicator - more visible */
+.drop-indicator {
+  height: 4px !important;
+  background: #a78bfa !important;
+  margin: 8px 0 !important;
+  box-shadow: 0 0 12px #a78bfa, 0 0 20px #a78bfa !important;
+}
+
+.drop-indicator::before,
+.drop-indicator::after {
+  width: 12px !important;
+  height: 12px !important;
+  background: #a78bfa !important;
+  box-shadow: 0 0 8px #a78bfa !important;
+}
+
+.drop-indicator::before {
+  left: -6px !important;
+}
+
+.drop-indicator::after {
+  right: -6px !important;
+}
