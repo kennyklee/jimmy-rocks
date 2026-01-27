@@ -18,6 +18,10 @@
         <h1 class="logo">Board</h1>
         <span class="subtitle">Kenny & Jimmy</span>
         <input type="text" id="search-input" class="search-input" placeholder="Search...">
+        <div class="tag-filter-wrapper">
+          <button type="button" class="tag-filter-btn" id="tag-filter-btn">All tags</button>
+          <div class="tag-filter-dropdown" id="tag-filter-dropdown"></div>
+        </div>
       </div>
       <div class="header-right">
         <a href="/metrics.html" class="btn btn-secondary">📊 Metrics</a>
@@ -146,7 +150,7 @@
             <!-- Comments rendered by JS -->
           </div>
           <form class="comment-form" id="comment-form">
-            <textarea id="comment-text" placeholder="Add an update..." rows="2"></textarea>
+            <div id="comment-text" class="comment-input" contenteditable="true" data-placeholder="Add an update..."></div>
             <button type="submit" class="btn btn-primary btn-small">Post</button>
           </form>
         </div>

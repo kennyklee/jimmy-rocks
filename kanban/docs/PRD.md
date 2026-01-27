@@ -1,186 +1,120 @@
 # Kanban v2 — Product Requirements Document
 
+## Status: ✅ Mostly Complete
+
+Most v2 features have been implemented. See checklist below.
+
 ## Overview
 
 Enhance the kanban board with assignment, ownership, and notification features to enable seamless collaboration between Kenny and Jimmy.
 
 ## Goals
 
-1. Clear ownership of tasks at all times
-2. Automatic notifications when action is needed
-3. Visibility into what's blocked and why
-4. Daily summary to start the day focused
+1. ✅ Clear ownership of tasks at all times
+2. ✅ Automatic notifications when action is needed
+3. ✅ Visibility into what's blocked and why
+4. ✅ Daily summary to start the day focused
 
 ## Non-Goals
 
 - Multi-user beyond Kenny & Jimmy
 - Complex workflow automation
-- Time tracking
-- Integrations with external tools (for now)
+- Time tracking (beyond cycle time)
+- Integrations with external tools
 
 ---
 
 ## Features
 
-### 1. Assignee
+### 1. Assignee ✅
+- [x] Values: kenny | jimmy | unassigned
+- [x] Default: jimmy
+- [x] UI: Dropdown in task detail modal
+- [x] Avatar/initial on task card
 
-Each task has an assignee indicating who owns it.
+### 2. Creator ✅
+- [x] Tracked automatically based on current user
+- [x] Shown in task detail view
+- [x] Immutable after creation
 
-- **Values:** kenny | jimmy | unassigned
-- **Default:** unassigned
-- **UI:** Dropdown or avatar selector on task card and detail view
+### 3. Blocked Status ✅ (via tags)
+- [x] Implemented as `blocked` tag (simpler than blockedBy field)
+- [x] Visual indicator on task card
+- [x] Auto-comment when tagged
 
-### 2. Creator
+### 4. Auto-Comments ✅
+- [x] "Created by {name}"
+- [x] "Moved to {column} by {name}"
+- [x] "Assigned to {name}"
+- [x] "Blocked by {name}" / "Unblocked"
+- [x] System comments visually distinct (smaller, muted)
 
-Track who created each task.
+### 5. Telegram Notifications ✅
+- [x] Task assigned to Kenny
+- [x] Task blocked by Kenny
+- [x] Jimmy completes task (moves to Done)
+- [x] @jimmy mentions in comments
+- [x] Kenny comments on tasks
 
-- **Values:** kenny | jimmy
-- **Set automatically** based on current user selection
-- **Immutable** after creation
-- **UI:** Shown in task detail view
+### 6. Daily Standup ✅
+- [x] Cron job at 8am PT
+- [x] Lists Kenny's tasks
+- [x] Lists blocked items
+- [x] Lists Jimmy's completed work
 
-### 3. Blocked Status
-
-Flag tasks that are waiting on someone.
-
-- **Values:** blocked_by_kenny | blocked_by_jimmy | null
-- **UI:** Visual indicator (badge/icon) on task card
-- **Can coexist with assignee** (e.g., assigned to Jimmy, blocked by Kenny)
-
-### 4. Auto-Comments
-
-System automatically logs changes as comments.
-
-**Triggers:**
-- Assignment changes: "Assigned to {name}"
-- Blocked status changes: "Blocked by {name}" / "Unblocked"
-- Task moved to Done: "Completed by {name}"
-
-**Format:**
-- Author: "system"
-- Visually distinct from user comments
-
-### 5. Telegram Notifications
-
-Jimmy sends Telegram messages to Kenny when:
-
-| Event | Message |
-|-------|---------|
-| Task assigned to Kenny | "New task for you: {title} — {link}" |
-| Task blocked by Kenny | "Blocked on you: {title} — {link}" |
-| Task completed by Jimmy | "Done: {title} — {link}" |
-
-**Link format:** Deep link to task detail view (e.g., `?task={id}`)
-
-### 6. Daily Standup
-
-Telegram message sent at configurable time (default 8am PT).
-
-**Content:**
-```
-Morning standup
-
-Your tasks:
-- {task 1} — {link}
-- {task 2} — {link}
-
-Blocked on you:
-- {task 3} — {link}
-
-Jimmy completed yesterday:
-- {task 4}
-```
-
-**Configuration:**
-- Time stored in app config (environment variable or config file)
-- Timezone: America/Los_Angeles
-
-### 7. Jimmy Auto-Pickup
-
-When a task is assigned to Jimmy:
-- System adds comment: "On it"
-- Jimmy begins working on the task
+### 7. Jimmy Auto-Pickup ⏳
+- [ ] Auto-comment "On it" when assigned — *not implemented*
+- [x] Cron job polls for @jimmy mentions and responds
 
 ---
 
-## Data Model Changes
+## Additional Features (Added During Build)
 
-```javascript
-// Existing item fields
-{
-  id: string,
-  title: string,
-  description: string,
-  priority: "low" | "medium" | "high" | "urgent",
-  createdAt: string,
-  createdBy: "kenny" | "jimmy",  // Already exists, ensure populated
-  comments: Comment[],
-  
-  // New fields
-  assignee: "kenny" | "jimmy" | null,
-  blockedBy: "kenny" | "jimmy" | null
-}
-```
+### Tagging System ✅
+- [x] Flexible tags: code/feature, code/bugfix, code/polish, blocked, self-improvement, etc.
+- [x] Tag filter dropdown in header
+- [x] Tags shown on cards and in detail view
 
----
+### Search ✅
+- [x] Real-time text search
+- [x] Filters by title and description
 
-## API Changes
+### @Mentions ✅
+- [x] Autocomplete dropdown when typing @
+- [x] Tab to complete
+- [x] Purple highlighting in rendered comments
+- [x] Notifications API for @jimmy mentions
 
-### Updated Endpoints
+### Ticket Numbers ✅
+- [x] Auto-incrementing #1, #2, etc.
+- [x] Shown on cards and in modal
 
-**PUT /api/items/:id**
-- Accept `assignee` and `blockedBy` fields
-- Trigger auto-comments on changes
-- Trigger Telegram notifications
+### Metrics Dashboard ✅
+- [x] Total/completed/in-progress counts
+- [x] Tasks by column chart
+- [x] Tasks by assignee chart
+- [x] Average time per stage
+- [x] Throughput over time
+- [x] Cycle time table
 
-### New Endpoints
-
-**GET /api/config**
-- Returns app configuration (standup time, etc.)
-
-**PUT /api/config**
-- Update configuration
-
----
-
-## UI Changes
-
-### Task Card
-- Show assignee avatar/initial
-- Show blocked indicator if blocked
-
-### Task Detail Modal
-- Assignee dropdown
-- Blocked by dropdown
-- Creator shown (read-only)
-- System comments styled differently
-
-### URL Deep Linking
-- Support `?task={id}` to auto-open task detail modal
+### UX Polish ✅
+- [x] Cmd+Enter to submit comments
+- [x] Escape to close modals/clear search
+- [x] Deep linking (?task=item-123)
+- [x] Scroll preservation on refresh
+- [x] Custom confirm modal for deletes
+- [x] Drop animation when moving cards
 
 ---
 
-## Configuration
+## Remaining Work
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| STANDUP_TIME | 08:00 | Daily standup time (24h format) |
-| STANDUP_TIMEZONE | America/Los_Angeles | Timezone for standup |
-| TELEGRAM_ENABLED | true | Enable/disable Telegram notifications |
-
----
-
-## Success Metrics
-
-- Clear ownership: 100% of active tasks have an assignee
-- Response time: Blocked items addressed within 24h
-- Daily engagement: Standup message read daily
-
----
-
-## Timeline
-
-TBD — awaiting approval to begin implementation.
+| Item | Priority | Notes |
+|------|----------|-------|
+| Jimmy "On it" auto-comment | Low | Nice-to-have |
+| Mobile UX testing | Medium | Basic support exists |
+| Error handling | Medium | API errors not shown to user |
+| Offline support | Low | Nice-to-have |
 
 ---
 

@@ -407,6 +407,16 @@ app.post('/api/items/:id/move', (req, res) => {
         itemTitle: item.title
       });
     }
+    
+    // Notify Jimmy when cards move to Review (needs his attention)
+    if (toColumnId === 'review') {
+      addNotification('moved_to_review', {
+        itemId: item.id,
+        itemNumber: item.number,
+        itemTitle: item.title,
+        movedBy: movedByUser
+      });
+    }
   }
   
   if (typeof position === 'number') {

@@ -18,32 +18,42 @@ function getUserName(userId) {
 const board = document.getElementById('board');
 const userSelect = document.getElementById('user-select');
 const searchInput = document.getElementById('search-input');
+const tagFilterBtn = document.getElementById('tag-filter-btn');
+const tagFilterDropdown = document.getElementById('tag-filter-dropdown');
 
-// Search functionality
+// Search & filter functionality
 let searchTimeout = null;
+let activeTagFilter = '';
 
-function filterCards(query) {
-  const q = query.toLowerCase().trim();
+function filterCards() {
+  const q = searchInput.value.toLowerCase().trim();
+  const tag = activeTagFilter;
   const items = document.querySelectorAll('.item');
   
   items.forEach(item => {
-    if (!q) {
-      item.classList.remove('search-hidden');
-      return;
-    }
-    
     const itemId = item.dataset.itemId;
     const itemData = findItemById(itemId);
     
-    if (itemData) {
+    if (!itemData) return;
+    
+    // Text search match
+    let textMatch = true;
+    if (q) {
       const titleMatch = itemData.title.toLowerCase().includes(q);
       const descMatch = (itemData.description || '').toLowerCase().includes(q);
-      
-      if (titleMatch || descMatch) {
-        item.classList.remove('search-hidden');
-      } else {
-        item.classList.add('search-hidden');
-      }
+      textMatch = titleMatch || descMatch;
+    }
+    
+    // Tag filter match
+    let tagMatch = true;
+    if (tag) {
+      tagMatch = itemData.tags && itemData.tags.includes(tag);
+    }
+    
+    if (textMatch && tagMatch) {
+      item.classList.remove('search-hidden');
+    } else {
+      item.classList.add('search-hidden');
     }
   });
 }
@@ -56,10 +66,55 @@ function findItemById(id) {
   return null;
 }
 
-searchInput.addEventListener('input', (e) => {
+function updateTagFilterOptions() {
+  // Collect all unique tags from the board
+  const allTags = new Set();
+  if (boardData) {
+    for (const col of boardData.columns) {
+      for (const item of col.items) {
+        if (item.tags) {
+          item.tags.forEach(t => allTags.add(t));
+        }
+      }
+    }
+  }
+  
+  // Sort and populate dropdown
+  const sorted = Array.from(allTags).sort();
+  
+  tagFilterDropdown.innerHTML = 
+    `<div class="tag-filter-option${!activeTagFilter ? ' selected' : ''}" data-value="">All tags</div>` +
+    sorted.map(t => 
+      `<div class="tag-filter-option${activeTagFilter === t ? ' selected' : ''}" data-value="${t}">${t}</div>`
+    ).join('');
+  
+  // Add click handlers to options
+  tagFilterDropdown.querySelectorAll('.tag-filter-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      activeTagFilter = opt.dataset.value;
+      tagFilterBtn.textContent = opt.dataset.value || 'All tags';
+      tagFilterDropdown.classList.remove('open');
+      filterCards();
+      updateTagFilterOptions(); // Update selected state
+    });
+  });
+}
+
+// Toggle dropdown on button click
+tagFilterBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  tagFilterDropdown.classList.toggle('open');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+  tagFilterDropdown.classList.remove('open');
+});
+
+searchInput.addEventListener('input', () => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    filterCards(e.target.value);
+    filterCards();
   }, 100);
 });
 
@@ -67,7 +122,7 @@ searchInput.addEventListener('input', (e) => {
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     searchInput.value = '';
-    filterCards('');
+    filterCards();
     searchInput.blur();
   }
 });
@@ -274,7 +329,7 @@ function openItemDetail(item) {
 function closeItemDetailModal() {
   itemDetailModal.classList.remove('active');
   selectedItem = null;
-  document.getElementById('comment-text').value = '';
+  document.getElementById('comment-text').innerText = '';
   updateUrlForTask(null);
 }
 
@@ -603,11 +658,11 @@ async function handleCommentSubmit(e) {
   if (!selectedItem) return;
   
   const commentEl = document.getElementById('comment-text');
-  const text = commentEl.value.trim();
+  const text = (commentEl.innerText || '').trim();
   if (!text) return;
   
   await api.addComment(selectedItem.id, text, currentUser);
-  commentEl.value = '';
+  commentEl.innerText = '';
   
   await refreshBoard();
   
@@ -648,6 +703,7 @@ async function refreshBoard() {
   
   boardData = await api.getBoard();
   renderBoard();
+  updateTagFilterOptions();
   
   // Restore scroll positions after render
   document.querySelectorAll('.column-items').forEach(col => {
@@ -656,6 +712,11 @@ async function refreshBoard() {
       col.scrollTop = scrollPositions[colId];
     }
   });
+  
+  // Re-apply active filters
+  if (searchInput.value || activeTagFilter) {
+    filterCards();
+  }
 }
 
 // Check for deep link on page load
@@ -720,33 +781,111 @@ async function init() {
   });
   commentForm.addEventListener('submit', handleCommentSubmit);
   
-  // Cmd+Enter (Mac) or Ctrl+Enter (Win/Linux) to submit comment
-  const commentTextarea = document.getElementById('comment-text');
+  // Contenteditable comment input with live @mention highlighting
+  const commentInput = document.getElementById('comment-text');
   const postBtn = commentForm.querySelector('button[type="submit"]');
   
-  commentTextarea.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      postBtn.classList.add('pressed');
-    }
-  });
+  // Get plain text from contenteditable
+  function getInputText() {
+    return commentInput.innerText || '';
+  }
   
-  commentTextarea.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter' || e.key === 'Meta' || e.key === 'Control') {
-      if (postBtn.classList.contains('pressed')) {
-        postBtn.classList.remove('pressed');
-        commentForm.dispatchEvent(new Event('submit'));
+  // Set text with highlighted mentions, preserving cursor
+  function updateHighlights() {
+    const sel = window.getSelection();
+    const text = getInputText();
+    
+    // Save cursor position as text offset
+    let cursorOffset = 0;
+    if (sel.rangeCount > 0 && commentInput.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(commentInput);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      cursorOffset = preRange.toString().length;
+    }
+    
+    // Highlight @mentions
+    const highlighted = text.replace(/@(jimmy|kenny)\b/gi, '<span class="mention-highlight">@$1</span>');
+    
+    // Only update if content changed (prevents cursor jump on every keystroke)
+    if (commentInput.innerHTML !== highlighted && highlighted !== text) {
+      commentInput.innerHTML = highlighted;
+      
+      // Restore cursor position
+      restoreCursor(cursorOffset);
+    }
+  }
+  
+  function restoreCursor(offset) {
+    const sel = window.getSelection();
+    const range = document.createRange();
+    
+    let charCount = 0;
+    let found = false;
+    
+    function walkNodes(node) {
+      if (found) return;
+      if (node.nodeType === Node.TEXT_NODE) {
+        const nextCount = charCount + node.length;
+        if (offset <= nextCount) {
+          range.setStart(node, offset - charCount);
+          range.collapse(true);
+          found = true;
+        }
+        charCount = nextCount;
+      } else {
+        for (const child of node.childNodes) {
+          walkNodes(child);
+          if (found) break;
+        }
       }
     }
+    
+    walkNodes(commentInput);
+    
+    if (found) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      // Put cursor at end if offset not found
+      range.selectNodeContents(commentInput);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+  
+  // Cmd+Enter / Ctrl+Enter to submit
+  commentInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      commentForm.dispatchEvent(new Event('submit'));
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      // Plain Enter submits (Shift+Enter for newline)
+      e.preventDefault();
+      commentForm.dispatchEvent(new Event('submit'));
+    }
   });
   
-  // @mention autocomplete for textarea
+  // @mention autocomplete
   let mentionDropdown = null;
   let mentionStartPos = -1;
   
-  commentTextarea.addEventListener('input', (e) => {
-    const text = e.target.value;
-    const cursorPos = e.target.selectionStart;
+  commentInput.addEventListener('input', () => {
+    const text = getInputText();
+    
+    // Get cursor position
+    const sel = window.getSelection();
+    let cursorPos = 0;
+    if (sel.rangeCount > 0 && commentInput.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(commentInput);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      cursorPos = preRange.toString().length;
+    }
     
     // Find @ before cursor
     const beforeCursor = text.slice(0, cursorPos);
@@ -759,21 +898,25 @@ async function init() {
         .filter(u => u.id !== 'system' && u.name.toLowerCase().startsWith(query));
       
       if (matches.length > 0) {
-        showMentionDropdown(e.target, matches);
+        showMentionDropdown(matches);
       } else {
         hideMentionDropdown();
+        // Update highlights after dropdown hidden
+        updateHighlights();
       }
     } else {
       hideMentionDropdown();
+      // Update highlights 
+      updateHighlights();
     }
   });
   
-  commentTextarea.addEventListener('keydown', (e) => {
+  commentInput.addEventListener('keydown', (e) => {
     if (e.key === 'Tab' && mentionDropdown && mentionDropdown.style.display !== 'none') {
       e.preventDefault();
       const firstOption = mentionDropdown.querySelector('.mention-option');
       if (firstOption) {
-        completeMention(commentTextarea, firstOption.dataset.name);
+        completeMention(firstOption.dataset.name);
       }
     }
     if (e.key === 'Escape') {
@@ -781,11 +924,11 @@ async function init() {
     }
   });
   
-  function showMentionDropdown(textarea, matches) {
+  function showMentionDropdown(matches) {
     if (!mentionDropdown) {
       mentionDropdown = document.createElement('div');
       mentionDropdown.className = 'mention-dropdown';
-      textarea.parentNode.appendChild(mentionDropdown);
+      commentInput.parentNode.appendChild(mentionDropdown);
     }
     
     mentionDropdown.innerHTML = matches.map(u => 
@@ -797,7 +940,7 @@ async function init() {
     // Click to select
     mentionDropdown.querySelectorAll('.mention-option').forEach(opt => {
       opt.addEventListener('click', () => {
-        completeMention(textarea, opt.dataset.name);
+        completeMention(opt.dataset.name);
       });
     });
   }
@@ -808,18 +951,20 @@ async function init() {
     }
   }
   
-  function completeMention(textarea, name) {
-    const text = textarea.value;
+  function completeMention(name) {
+    const text = getInputText();
     const before = text.slice(0, mentionStartPos);
-    const after = text.slice(textarea.selectionStart);
+    const after = text.slice(mentionStartPos).replace(/^@\w*/, '');
     
-    textarea.value = before + '@' + name + ' ' + after;
-    textarea.focus();
+    const newText = before + '@' + name + ' ' + after;
+    commentInput.innerText = newText;
     
-    // Position cursor after the mention and space
+    // Update highlights and position cursor after mention
+    updateHighlights();
     const newPos = mentionStartPos + name.length + 2;
-    textarea.setSelectionRange(newPos, newPos);
+    restoreCursor(newPos);
     
+    commentInput.focus();
     hideMentionDropdown();
   }
   
@@ -839,7 +984,8 @@ async function init() {
     }
     if (e.key === 'n' && !e.ctrlKey && !e.metaKey && 
         document.activeElement.tagName !== 'INPUT' && 
-        document.activeElement.tagName !== 'TEXTAREA') {
+        document.activeElement.tagName !== 'TEXTAREA' &&
+        !document.activeElement.isContentEditable) {
       openNewItemModal();
     }
   });

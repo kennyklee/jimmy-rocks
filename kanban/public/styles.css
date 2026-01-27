@@ -1055,7 +1055,81 @@ form {
   color: var(--text-muted);
 }
 
-/* Hidden cards during search */
+/* Tag filter custom dropdown */
+.tag-filter-wrapper {
+  position: relative;
+  margin-left: 12px;
+}
+
+.tag-filter-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 28px 6px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 120px;
+  text-align: left;
+  position: relative;
+}
+
+.tag-filter-btn::after {
+  content: '▼';
+  font-size: 10px;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.tag-filter-btn:hover {
+  border-color: var(--text-muted);
+}
+
+.tag-filter-btn:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tag-filter-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.tag-filter-dropdown.open {
+  display: block;
+}
+
+.tag-filter-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.tag-filter-option:hover {
+  background: var(--bg-tertiary);
+}
+
+.tag-filter-option.selected {
+  background: var(--accent);
+  color: white;
+}
+
+/* Hidden cards during search/filter */
 .item.search-hidden {
   display: none;
 }
@@ -1185,6 +1259,8 @@ form {
   flex: 1;
   font-family: inherit;
   line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .comment-input:focus {
