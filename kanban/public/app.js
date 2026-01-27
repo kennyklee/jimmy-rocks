@@ -345,13 +345,43 @@ async function handleNewItemSubmit(e) {
   await refreshBoard();
 }
 
+// Custom confirm modal
+const confirmModal = document.getElementById('confirm-modal');
+const confirmMessage = document.getElementById('confirm-message');
+const confirmCancel = document.getElementById('confirm-cancel');
+const confirmOk = document.getElementById('confirm-ok');
+let confirmCallback = null;
+
+function showConfirm(message, onConfirm) {
+  confirmMessage.textContent = message;
+  confirmCallback = onConfirm;
+  confirmModal.classList.add('active');
+}
+
+function hideConfirm() {
+  confirmModal.classList.remove('active');
+  confirmCallback = null;
+}
+
+confirmCancel.addEventListener('click', hideConfirm);
+confirmOk.addEventListener('click', () => {
+  if (confirmCallback) confirmCallback();
+  hideConfirm();
+});
+
+// Close on overlay click
+confirmModal.addEventListener('click', (e) => {
+  if (e.target === confirmModal) hideConfirm();
+});
+
 async function handleDeleteItem() {
   if (!selectedItem) return;
-  if (!confirm(`Delete "${selectedItem.title}"?\n\nThis cannot be undone.`)) return;
   
-  await api.deleteItem(selectedItem.id);
-  closeItemDetailModal();
-  await refreshBoard();
+  showConfirm(`Delete "${selectedItem.title}"?`, async () => {
+    await api.deleteItem(selectedItem.id);
+    closeItemDetailModal();
+    await refreshBoard();
+  });
 }
 
 async function handleMoveColumn(e) {

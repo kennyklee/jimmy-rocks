@@ -792,3 +792,35 @@ form {
 .btn-link-danger {
   font-size: 14px;
 }
+
+/* Confirm modal */
+.modal-confirm {
+  max-width: 360px;
+  padding: 24px;
+}
+
+.confirm-body {
+  margin-bottom: 24px;
+}
+
+.confirm-message {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.confirm-warning {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.confirm-actions .btn {
+  min-width: 80px;
+}
