@@ -391,17 +391,17 @@ app.post('/api/items/:id/move', (req, res) => {
     
     // Auto-comment when moved to Done
     if (toColumnId === 'done') {
-      const completedBy = movedBy || item.assignee || 'unknown';
+      const movedByUser = movedBy || item.assignee || 'unknown';
       item.comments = item.comments || [];
       item.comments.push({
         id: `comment-${Date.now()}-done`,
-        text: `Completed by ${getUserName(completedBy)}`,
+        text: `Moved to Done by ${getUserName(movedByUser)}`,
         author: 'system',
         createdAt: new Date().toISOString()
       });
       
       // Notify Kenny when Jimmy completes a task
-      if (completedBy === 'jimmy') {
+      if (movedByUser === 'jimmy') {
         addNotification('jimmy_completed', {
           itemId: item.id,
           itemTitle: item.title
@@ -409,23 +409,13 @@ app.post('/api/items/:id/move', (req, res) => {
       }
     }
     
-    // Auto-comment when moved to Doing
-    if (toColumnId === 'doing') {
+    // Auto-comment for column moves (Doing, Review)
+    if (toColumnId === 'doing' || toColumnId === 'review') {
+      const columnName = toColumnId.charAt(0).toUpperCase() + toColumnId.slice(1);
       item.comments = item.comments || [];
       item.comments.push({
-        id: `comment-${Date.now()}-doing`,
-        text: `Started by ${getUserName(movedBy || item.assignee)}`,
-        author: 'system',
-        createdAt: new Date().toISOString()
-      });
-    }
-    
-    // Auto-comment when moved to Review
-    if (toColumnId === 'review') {
-      item.comments = item.comments || [];
-      item.comments.push({
-        id: `comment-${Date.now()}-review`,
-        text: `Moved to review by ${getUserName(movedBy || item.assignee)}`,
+        id: `comment-${Date.now()}-move`,
+        text: `Moved to ${columnName} by ${getUserName(movedBy || item.assignee)}`,
         author: 'system',
         createdAt: new Date().toISOString()
       });
