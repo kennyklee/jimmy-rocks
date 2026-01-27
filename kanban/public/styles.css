@@ -993,3 +993,11 @@ form {
   align-items: center;
   gap: 8px;
 }
+
+/* Ticket number in modal header */
+.detail-ticket-number {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-right: 8px;
+}

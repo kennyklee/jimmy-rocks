@@ -177,6 +177,7 @@ function openItemDetail(item) {
   selectedItem = item;
   
   document.getElementById('detail-title').textContent = item.title;
+  document.getElementById('detail-ticket-number').textContent = item.number ? `#${item.number}` : '';
   document.getElementById('detail-priority').textContent = item.priority;
   document.getElementById('detail-priority').className = `priority-badge priority-${item.priority}`;
   document.getElementById('detail-description').textContent = item.description || 'No description';
