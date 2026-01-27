@@ -6,10 +6,40 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3333;
 const DATA_FILE = path.join(__dirname, 'data', 'board.json');
+const NOTIFICATIONS_FILE = path.join(__dirname, 'data', 'notifications.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
   fs.mkdirSync(path.join(__dirname, 'data'));
+}
+
+// Initialize notifications file
+if (!fs.existsSync(NOTIFICATIONS_FILE)) {
+  fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify({ notifications: [] }, null, 2));
+}
+
+// Notifications helper functions
+function readNotifications() {
+  try {
+    return JSON.parse(fs.readFileSync(NOTIFICATIONS_FILE, 'utf8'));
+  } catch {
+    return { notifications: [] };
+  }
+}
+
+function writeNotifications(data) {
+  fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(data, null, 2));
+}
+
+function addNotification(type, payload) {
+  const data = readNotifications();
+  data.notifications.push({
+    id: `notif-${Date.now()}`,
+    type,
+    payload,
+    createdAt: new Date().toISOString()
+  });
+  writeNotifications(data);
 }
 
 // Column definitions
@@ -335,11 +365,50 @@ app.post('/api/items/:id/comments', (req, res) => {
       item.comments = item.comments || [];
       item.comments.push(comment);
       writeData(data);
+      
+      // Create notification if Kenny comments (notify Jimmy)
+      if (author === 'kenny') {
+        addNotification('kenny_comment', {
+          itemId: item.id,
+          itemTitle: item.title,
+          commentId: comment.id,
+          commentText: text,
+          commentedAt: comment.createdAt
+        });
+      }
+      
       return res.json(comment);
     }
   }
   
   res.status(404).json({ error: 'Item not found' });
+});
+
+// Get pending notifications (for Jimmy to poll)
+app.get('/api/notifications', (req, res) => {
+  const data = readNotifications();
+  res.json(data.notifications);
+});
+
+// Clear a notification (after Jimmy has processed it)
+app.delete('/api/notifications/:id', (req, res) => {
+  const { id } = req.params;
+  const data = readNotifications();
+  const index = data.notifications.findIndex(n => n.id === id);
+  
+  if (index !== -1) {
+    const removed = data.notifications.splice(index, 1)[0];
+    writeNotifications(data);
+    return res.json(removed);
+  }
+  
+  res.status(404).json({ error: 'Notification not found' });
+});
+
+// Clear all notifications
+app.delete('/api/notifications', (req, res) => {
+  writeNotifications({ notifications: [] });
+  res.json({ cleared: true });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
