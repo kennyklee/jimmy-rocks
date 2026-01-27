@@ -829,37 +829,22 @@ async function init() {
     const before = text.slice(0, matchPos);
     const after = text.slice(matchPos + currentMatch.length);
     
-    // Clear and rebuild element
-    element.innerHTML = '';
+    // Build new content: before + @Name (purple) + space + after
+    // Using innerHTML to ensure clean structure
+    let html = '';
+    if (before) html += escapeHtml(before);
+    html += '<span class="mention-highlight">@' + escapeHtml(name) + '</span> ';
+    if (after) html += escapeHtml(after);
     
-    // Add text before (if any)
-    if (before) {
-      element.appendChild(document.createTextNode(before));
-    }
+    element.innerHTML = html;
     
-    // Add highlighted mention span
-    const span = document.createElement('span');
-    span.className = 'mention-highlight';
-    span.textContent = '@' + name;
-    element.appendChild(span);
-    
-    // Add space as text node
-    const spaceNode = document.createTextNode(' ');
-    element.appendChild(spaceNode);
-    
-    // Add text after (if any)
-    if (after) {
-      element.appendChild(document.createTextNode(after));
-    }
-    
-    // Position cursor after the space
+    // Move cursor to end
     element.focus();
-    const sel = window.getSelection();
     const range = document.createRange();
-    range.setStartAfter(spaceNode);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    range.selectNodeContents(element);
+    range.collapse(false);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
     
     hideMentionDropdown();
   }
