@@ -337,6 +337,12 @@ async function handleDrop(e) {
     }
   }
   
+  // Add animating class to target column for smooth transitions
+  const targetColumn = document.querySelector(`[data-column-id="${toColumnId}"]`);
+  if (targetColumn) {
+    targetColumn.classList.add('animating');
+  }
+  
   await api.moveItem(itemId, toColumnId, position);
   await refreshBoard();
   
@@ -346,6 +352,9 @@ async function handleDrop(e) {
     droppedCard.classList.add('just-dropped');
     droppedCard.addEventListener('animationend', () => {
       droppedCard.classList.remove('just-dropped');
+      // Remove animating class after animation completes
+      const col = droppedCard.closest('.column-items');
+      if (col) col.classList.remove('animating');
     }, { once: true });
   }
 }
