@@ -220,9 +220,6 @@ function renderComments(comments) {
       </div>
     `;
   }).join('');
-  
-  // Scroll to bottom
-  list.scrollTop = list.scrollHeight;
 }
 
 // Modal Functions
@@ -268,6 +265,10 @@ function openItemDetail(item) {
   renderComments(item.comments);
   itemDetailModal.classList.add('active');
   updateUrlForTask(item.id);
+  
+  // Scroll comments to bottom when opening
+  const commentsList = document.getElementById('comments-list');
+  commentsList.scrollTop = commentsList.scrollHeight;
 }
 
 function closeItemDetailModal() {
@@ -615,6 +616,9 @@ async function handleCommentSubmit(e) {
     if (item) {
       selectedItem = item;
       renderComments(item.comments);
+      // Scroll to bottom to show new comment
+      const commentsList = document.getElementById('comments-list');
+      commentsList.scrollTop = commentsList.scrollHeight;
       break;
     }
   }
