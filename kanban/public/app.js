@@ -829,31 +829,35 @@ async function init() {
     const before = text.slice(0, matchPos);
     const after = text.slice(matchPos + currentMatch.length);
     
-    // Build HTML: text before + highlighted mention + space + text after
-    element.innerHTML = escapeHtml(before) + 
-      '<span class="mention-highlight">@' + name + '</span>' + 
-      '&nbsp;' + escapeHtml(after);
+    // Clear and rebuild element
+    element.innerHTML = '';
     
-    // Move cursor after the space (after the mention span)
+    // Add text before (if any)
+    if (before) {
+      element.appendChild(document.createTextNode(before));
+    }
+    
+    // Add highlighted mention span
+    const span = document.createElement('span');
+    span.className = 'mention-highlight';
+    span.textContent = '@' + name;
+    element.appendChild(span);
+    
+    // Add space as text node
+    const spaceNode = document.createTextNode(' ');
+    element.appendChild(spaceNode);
+    
+    // Add text after (if any)
+    if (after) {
+      element.appendChild(document.createTextNode(after));
+    }
+    
+    // Position cursor after the space
     element.focus();
     const sel = window.getSelection();
     const range = document.createRange();
-    
-    // Find the text node after the span (the nbsp)
-    const nodes = element.childNodes;
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].nodeType === Node.TEXT_NODE && i > 0) {
-        range.setStart(nodes[i], 0);
-        range.collapse(true);
-        break;
-      }
-    }
-    // If no text node after, go to end
-    if (range.startContainer === element) {
-      range.selectNodeContents(element);
-      range.collapse(false);
-    }
-    
+    range.setStartAfter(spaceNode);
+    range.collapse(true);
     sel.removeAllRanges();
     sel.addRange(range);
     
