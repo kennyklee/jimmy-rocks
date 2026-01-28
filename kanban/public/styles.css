@@ -990,14 +990,9 @@ form {
     opacity: 0;
     transform: scale(0.95);
   }
-  50% {
-    opacity: 1;
-    background: rgba(167, 139, 250, 0.2);
-  }
   100% {
     opacity: 1;
     transform: scale(1);
-    background: var(--bg-secondary);
   }
 }
 
