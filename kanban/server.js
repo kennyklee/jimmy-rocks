@@ -1,4 +1,5 @@
 const express = require('express');
+const morgan = require('morgan');
 const crypto = require('crypto');
 
 // Generate unique IDs to prevent collision under concurrent requests
@@ -93,6 +94,7 @@ if (!fs.existsSync(DATA_FILE)) {
 
 app.use(cors());
 app.use(express.json());
+app.use(morgan('combined'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Helper functions
