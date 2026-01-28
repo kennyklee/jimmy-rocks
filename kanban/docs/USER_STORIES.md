@@ -244,3 +244,234 @@
 ---
 
 *Last updated: 2026-01-28*
+
+---
+
+## Epic: Undo & Recovery
+
+### US-16: Undo last action
+
+**As** a user  
+**I want** to undo my last move or delete  
+**So that** I can recover from mistakes
+
+**Acceptance Criteria:**
+- [x] Ctrl+Z / Cmd+Z triggers undo
+- [x] Undo moves: returns card to previous column/position
+- [x] Undo deletes: recreates the deleted card
+- [x] Undo stack holds last 10 actions
+- [x] Toast confirms "Undone" with description
+
+---
+
+## Epic: Subtasks
+
+### US-17: Subtasks / checklist
+
+**As** a user  
+**I want** to add subtasks to a card  
+**So that** I can break down work into smaller steps
+
+**Acceptance Criteria:**
+- [x] Task detail modal has "Checklist" section
+- [x] Can add subtask with text input
+- [x] Can check/uncheck subtasks
+- [x] Can delete subtasks
+- [x] Card shows progress (e.g., 2/5) with mini progress bar
+- [x] Subtasks persisted to server
+
+---
+
+## Epic: Archive
+
+### US-18: Archive old done tasks
+
+**As** a user  
+**I want** old completed tasks to be hidden  
+**So that** the Done column stays manageable
+
+**Acceptance Criteria:**
+- [x] Tasks in Done older than N days are hidden by default
+- [x] "Show X archived" toggle appears when archived exist
+- [x] Clicking toggle reveals/hides archived tasks
+- [x] Archived tasks still accessible, just hidden
+
+---
+
+## Epic: UI Polish
+
+### US-19: Preserve scroll position on refresh
+
+**As** a user  
+**I want** column scroll positions preserved after refresh  
+**So that** I dont lose my place
+
+---
+
+## Epic: Undo & Recovery
+
+### US-16: Undo last action
+
+**As** a user  
+**I want** to undo my last move or delete  
+**So that** I can recover from mistakes
+
+**Acceptance Criteria:**
+- [x] Ctrl+Z / Cmd+Z triggers undo
+- [x] Undo moves: returns card to previous column/position
+- [x] Undo deletes: recreates the deleted card
+- [x] Undo stack holds last 10 actions
+- [x] Toast confirms undo with description
+
+---
+
+## Epic: Subtasks
+
+### US-17: Subtasks / checklist
+
+**As** a user  
+**I want** to add subtasks to a card  
+**So that** I can break down work into smaller steps
+
+**Acceptance Criteria:**
+- [x] Task detail modal has Checklist section
+- [x] Can add subtask with text input
+- [x] Can check/uncheck subtasks
+- [x] Can delete subtasks
+- [x] Card shows progress with mini progress bar
+- [x] Subtasks persisted to server
+
+---
+
+## Epic: Archive
+
+### US-18: Archive old done tasks
+
+**As** a user  
+**I want** old completed tasks to be hidden  
+**So that** the Done column stays manageable
+
+**Acceptance Criteria:**
+- [x] Tasks in Done older than N days hidden by default
+- [x] Show X archived toggle appears when archived exist
+- [x] Clicking toggle reveals/hides archived tasks
+- [x] Archived tasks still accessible, just hidden
+
+---
+
+## Epic: UI Polish
+
+### US-19: Preserve scroll position on refresh
+
+**As** a user  
+**I want** column scroll positions preserved after refresh  
+**So that** I do not lose my place
+
+**Acceptance Criteria:**
+- [x] Before refresh, save scroll position of each column
+- [x] After render, restore scroll positions
+- [x] Works with auto-refresh 10 second poll
+
+---
+
+### US-20: Tag filter dropdown
+
+**As** a user  
+**I want** to filter cards by tag using a dropdown  
+**So that** I can focus on specific categories
+
+**Acceptance Criteria:**
+- [x] Dropdown in header shows all tags in use
+- [x] Selecting a tag filters cards to only show that tag
+- [x] All tags option clears filter
+- [x] Works in combination with text search
+
+---
+
+### US-21: Swap assignee and comment icons on card
+
+**As** a user  
+**I want** consistent icon placement on cards  
+**So that** the UI feels polished
+
+**Acceptance Criteria:**
+- [x] Assignee badge on right side of card footer
+- [x] Comment count next to assignee
+- [x] Priority badge on left side
+
+---
+
+### US-22: Error toasts
+
+**As** a user  
+**I want** to see error messages when API calls fail  
+**So that** I know something went wrong
+
+**Acceptance Criteria:**
+- [x] Toast notification appears on API error
+- [x] Toast shows error title and message
+- [x] Toast auto-dismisses after 5 seconds
+- [x] Can manually dismiss toast
+
+---
+
+### US-23: Keyboard navigation
+
+**As** a user  
+**I want** to navigate cards with keyboard  
+**So that** I can work without a mouse
+
+**Acceptance Criteria:**
+- [x] j/k or arrow keys move selection between cards
+- [x] Enter opens selected card detail
+- [x] Escape closes modal and clears selection
+- [x] n opens new task modal
+- [x] Default selection: first Todo card on page load
+
+---
+
+## Epic: Mobile Support
+
+### US-24: Touch drag support iOS Safari
+
+**As** a mobile user  
+**I want** to drag cards on touch devices  
+**So that** I can use the board on my phone
+
+**Acceptance Criteria:**
+- [x] Long-press initiates drag on touch devices
+- [x] Drag works in iOS Safari
+- [x] Drop placeholder visible during drag
+- [x] Auto-scroll when dragging near edges
+
+---
+
+## Epic: Automation
+
+### US-25: Jimmy auto-responds to mentions
+
+**As** Kenny  
+**I want** Jimmy to automatically respond to mentions  
+**So that** I know he saw my message
+
+**Acceptance Criteria:**
+- [x] Heartbeat checks for jimmy mentions
+- [x] Jimmy posts response in task comments
+- [x] Notification cleared after response
+- [x] Response acknowledges the mention contextually
+
+---
+
+### US-26: Fix cron job author
+
+**As** a user  
+**I want** cron job comments to show correct author  
+**So that** audit trail is accurate
+
+**Acceptance Criteria:**
+- [x] Cron-triggered comments show jimmy not unknown
+- [x] System comments still show system
+
+---
+
+*Last updated: 2026-01-28*
