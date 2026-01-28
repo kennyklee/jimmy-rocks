@@ -7,16 +7,16 @@ A clean, minimal kanban board for Kenny & Jimmy.
 ### Core
 - **5 columns:** Backlog, Todo, Doing, Review, Done
 - **Drag and drop** — between columns and reorder within
-- **Assignees** — Kenny or Jimmy (default: Jimmy)
+- **Assignees** — Kenny, Jimmy, Dev, QA (default: Jimmy)
 - **Priority levels** — low, medium, high, urgent
 - **Ticket numbers** — #1, #2, etc. for easy reference
-- **Tags** — categorize with code/feature, code/bugfix, blocked, self-improvement, etc.
+- **Tags** — required for every task (auto-defaults to "needs-triage" if you don't choose one). Examples: code/feature, code/bugfix, blocked, self-improvement, etc.
 
 ### Collaboration
 - **Comments thread** — per-task conversation
-- **@mentions** — type @kenny or @jimmy, Tab to autocomplete
+- **@mentions** — type @jimmy, @dev, or @qa, Tab to autocomplete
 - **Auto-comments** — system logs moves, assignments, blocks
-- **Notifications API** — webhook for @jimmy mentions, Kenny comments
+- **Notifications API** — webhook for @jimmy/@dev/@qa mentions and comments
 
 ### Search & Filter
 - **Text search** — filter by title/description
@@ -79,17 +79,26 @@ npm run dev  # or: node server.js
 - **Metrics:** http://100.108.213.40:3333/metrics.html
 - **Network:** Tailscale only (internal)
 
+## Multi-Agent Team
+
+This project is run by a small multi-agent team with clear handoffs:
+
+- **@Jimmy (PM):** Creates tasks, clarifies scope/acceptance criteria, coordinates handoffs, and keeps the board organized.
+- **@Dev:** Implements changes and commits locally. Does **not** push or deploy. Tags @QA when ready for review.
+- **@QA:** Reviews changes, runs verification, then **pushes**, **deploys**, and moves tasks to **Done**.
+
 ## Workflow
 
-1. Kenny creates tasks → Backlog or Todo
-2. Jimmy picks up → moves to Doing
-3. Jimmy completes → moves to Review
-4. Kenny approves → moves to Done
+1. **@Jimmy (PM)** creates tasks → Backlog or Todo
+2. **@Dev** picks up work → moves to Doing
+3. **@Dev** completes implementation → commits locally and moves to Review (tagging @QA)
+4. **@QA** reviews, pushes, deploys → moves to Done
 
 **Rules:**
-- Jimmy never moves directly to Done (always Review first)
-- Only Kenny moves tasks to Done
-- Use @jimmy in comments to ping Jimmy
+- Tags are required on every task (defaults to "needs-triage")
+- Dev never moves directly to Done (always Review first)
+- **Only @QA moves tasks to Done**
+- Use @mentions in comments to coordinate (@jimmy, @dev, @qa)
 
 ## Data
 
@@ -103,7 +112,7 @@ Stored in Docker volume `kanban-data`. Not tracked in git.
   description: "Details...",
   priority: "high",
   assignee: "jimmy",
-  tags: ["code/feature", "blocked"],
+  tags: ["needs-triage", "code/feature"],
   createdAt: "2026-01-27T...",
   createdBy: "kenny",
   comments: [...],
