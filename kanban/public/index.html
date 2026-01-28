@@ -49,6 +49,14 @@
       </div>
       <form id="new-item-form">
         <div class="form-group">
+          <label for="item-template">Template</label>
+          <select id="item-template">
+            <option value="task" selected>Task</option>
+            <option value="bug">Bug Report</option>
+            <option value="feature">Feature Request</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label for="item-title">Title</label>
           <input type="text" id="item-title" placeholder="What needs to be done?" required>
         </div>
@@ -87,6 +95,7 @@
           <label for="item-tags">Tags <span class="required">*</span></label>
           <select id="item-tags" multiple required>
             <option value="needs-triage" selected>needs-triage</option>
+            <option value="bug">bug</option>
             <option value="code/feature">code/feature</option>
             <option value="code/polish">code/polish</option>
             <option value="code/bugfix">code/bugfix</option>
@@ -128,6 +137,7 @@
           <select id="tag-select" class="move-select">
             <option value="">+ Add tag</option>
             <option value="needs-triage">needs-triage</option>
+            <option value="bug">bug</option>
             <option value="code/feature">code/feature</option>
             <option value="code/polish">code/polish</option>
             <option value="code/bugfix">code/bugfix</option>

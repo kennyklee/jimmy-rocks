@@ -31,6 +31,7 @@ const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
 const itemAssignee = document.getElementById('item-assignee');
 const tagSelect = document.getElementById('tag-select');
+const templateSelect = document.getElementById('item-template');
 
 // Wire up dependencies between modules
 setRefreshDependencies({
@@ -49,10 +50,112 @@ setDndDependencies({
   openItemDetail
 });
 
+// New Item templates
+const ITEM_TEMPLATES = {
+  task: {
+    id: 'task',
+    name: 'Task',
+    titlePrefix: '',
+    description: '',
+    priority: 'medium',
+    tags: ['needs-triage']
+  },
+  bug: {
+    id: 'bug',
+    name: 'Bug Report',
+    titlePrefix: 'Bug:',
+    description: '### Summary
+
+### Steps to Reproduce
+1.
+2.
+
+### Expected
+
+### Actual
+
+### Environment
+- Browser:
+- Device/OS:',
+    priority: 'high',
+    tags: ['bug']
+  },
+  feature: {
+    id: 'feature',
+    name: 'Feature Request',
+    titlePrefix: 'Feature:',
+    description: '### Problem / Motivation
+
+### Proposed Solution
+
+### Acceptance Criteria
+- [ ]
+- [ ]
+
+### Notes
+',
+    priority: 'medium',
+    tags: ['code/feature']
+  }
+};
+
+const KNOWN_TITLE_PREFIXES = ['Bug:', 'Feature:'];
+
+function setMultiSelectValues(selectEl, values) {
+  if (!selectEl) return;
+  const set = new Set(values || []);
+  for (const opt of selectEl.options) {
+    opt.selected = set.has(opt.value);
+  }
+}
+
+function normalizeTitleWithPrefix(title, prefix) {
+  const t = String(title || '');
+  if (!prefix) {
+    // Remove known prefixes when switching back to Task
+    for (const p of KNOWN_TITLE_PREFIXES) {
+      if (t.startsWith(p)) {
+        return t.slice(p.length).trimStart();
+      }
+    }
+    return t;
+  }
+
+  const trimmed = t.trimStart();
+  if (trimmed.startsWith(prefix)) return trimmed;
+  for (const p of KNOWN_TITLE_PREFIXES) {
+    if (trimmed.startsWith(p)) {
+      return prefix + ' ' + trimmed.slice(p.length).trimStart();
+    }
+  }
+  return prefix + ' ' + trimmed;
+}
+
+function applyItemTemplate(templateId) {
+  const tpl = ITEM_TEMPLATES[templateId] || ITEM_TEMPLATES.task;
+
+  const titleEl = document.getElementById('item-title');
+  const descEl = document.getElementById('item-description');
+  const prioEl = document.getElementById('item-priority');
+  const tagsEl = document.getElementById('item-tags');
+
+  if (titleEl) titleEl.value = normalizeTitleWithPrefix(titleEl.value, tpl.titlePrefix);
+  if (descEl) descEl.value = tpl.description || '';
+  if (prioEl && tpl.priority) prioEl.value = tpl.priority;
+  if (tagsEl && Array.isArray(tpl.tags)) setMultiSelectValues(tagsEl, tpl.tags);
+}
+
 // Modal Functions
 function openNewItemModal() {
   renderAssigneeOptions(itemAssignee);
   if (currentUser) itemAssignee.value = currentUser;
+
+  if (templateSelect) {
+    // Ensure a deterministic default when opening the modal
+    templateSelect.value = templateSelect.value || 'task';
+    applyItemTemplate(templateSelect.value);
+  }
+
   newItemModal.classList.add('active');
   document.getElementById('item-title').focus();
 }
@@ -60,6 +163,7 @@ function openNewItemModal() {
 function closeNewItemModal() {
   newItemModal.classList.remove('active');
   newItemForm.reset();
+  if (templateSelect) templateSelect.value = 'task';
 }
 
 function openItemDetail(item) {
@@ -437,7 +541,13 @@ async function init() {
   newItemBtn.addEventListener('click', openNewItemModal);
   closeNewModal.addEventListener('click', closeNewItemModal);
   cancelNew.addEventListener('click', closeNewItemModal);
-  newItemForm.addEventListener('submit', handleNewItemSubmit);
+  
+  if (templateSelect) {
+    templateSelect.addEventListener('change', (e) => {
+      applyItemTemplate(e.target.value);
+      document.getElementById('item-title').focus();
+    });
+  }
   
   closeDetailModal.addEventListener('click', closeItemDetailModal);
   deleteItemBtn.addEventListener('click', handleDeleteItem);
