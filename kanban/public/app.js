@@ -5,6 +5,32 @@ let selectedItem = null;
 let showArchivedDone = false; // Show tasks in Done older than 7 days
 let undoStack = []; // Stack of undoable actions
 
+// Theme handling
+function initTheme() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  setTheme(saved);
+  const select = document.getElementById('theme-select');
+  if (select) {
+    select.value = saved;
+    select.addEventListener('change', (e) => setTheme(e.target.value));
+  }
+}
+
+function setTheme(theme) {
+  localStorage.setItem('theme', theme);
+  if (theme === 'system') {
+    document.documentElement.setAttribute('data-theme', 'system');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+
+// Initialize theme immediately to prevent flash
+(function() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+
 // Toast notifications
 function showToast(type, title, message, duration = 5000) {
   const container = document.getElementById('toast-container');
@@ -928,6 +954,9 @@ function updateUrlForTask(taskId) {
 
 // Initialize
 async function init() {
+  // Initialize theme
+  initTheme();
+  
   // Load user preference
   const savedUser = localStorage.getItem('kanban-user');
   if (savedUser) {
