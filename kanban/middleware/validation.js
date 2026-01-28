@@ -2,7 +2,8 @@ const { body, param, validationResult } = require('express-validator');
 
 const VALID_COLUMNS = ['backlog', 'todo', 'doing', 'review', 'done'];
 const VALID_PRIORITIES = ['low', 'medium', 'high'];
-const VALID_USERS = ['kenny', 'jimmy'];
+const VALID_USERS = ['kenny', 'jimmy', 'dev', 'qa'];
+const VALID_USERS = ['kenny', 'jimmy', 'dev', 'qa'];
 
 function validate(validations) {
   return async (req, res, next) => {
