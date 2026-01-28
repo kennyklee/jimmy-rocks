@@ -729,12 +729,18 @@ function handleItemClick(e) {
 async function handleNewItemSubmit(e) {
   e.preventDefault();
   
+  const tagsSelect = document.getElementById('item-tags');
+  const tags = tagsSelect
+    ? Array.from(tagsSelect.selectedOptions).map(o => o.value)
+    : [];
+
   const data = {
     title: document.getElementById('item-title').value,
     description: document.getElementById('item-description').value,
     priority: document.getElementById('item-priority').value,
     assignee: document.getElementById('item-assignee').value,
     columnId: document.getElementById('item-column').value,
+    tags,
     createdBy: currentUser
   };
   

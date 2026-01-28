@@ -90,6 +90,21 @@ function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
+// Tags: ensure every item always has at least one tag.
+// If none are provided, default to "needs-triage".
+function normalizeTags(tags) {
+  if (tags == null) return ['needs-triage'];
+  if (!Array.isArray(tags)) {
+    throw new Error('Tags must be an array of strings');
+  }
+
+  const cleaned = tags
+    .map(t => String(t).trim())
+    .filter(Boolean);
+
+  return cleaned.length > 0 ? cleaned : ['needs-triage'];
+}
+
 // Calculate time spent in each stage for an item
 function calculateStageTime(item) {
   if (!item.stageHistory || item.stageHistory.length === 0) {
@@ -248,9 +263,16 @@ app.get('/api/metrics', (req, res) => {
 
 // Create new item
 app.post('/api/items', (req, res) => {
-  const { title, description, priority, columnId } = req.body;
+  const { title, description, priority, columnId, tags } = req.body;
   const data = readData();
   const targetColumnId = columnId || 'todo';
+
+  let finalTags;
+  try {
+    finalTags = normalizeTags(tags);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'Invalid tags' });
+  }
   
   // Auto-increment ticket number
   data.nextTicketNumber = (data.nextTicketNumber || 1);
@@ -280,6 +302,7 @@ app.post('/api/items', (req, res) => {
     description: description || '',
     priority: priority || 'medium',
     assignee: req.body.assignee || 'jimmy',
+    tags: finalTags,
     createdAt: new Date().toISOString(),
     createdBy: finalCreatedBy,
     comments: [
@@ -311,6 +334,15 @@ app.put('/api/items/:id', (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   const data = readData();
+
+  // If client tries to clear tags, keep the invariant by defaulting to needs-triage.
+  if ('tags' in updates) {
+    try {
+      updates.tags = normalizeTags(updates.tags);
+    } catch (e) {
+      return res.status(400).json({ error: e.message || 'Invalid tags' });
+    }
+  }
   
   for (const column of data.columns) {
     const itemIndex = column.items.findIndex(i => i.id === id);

@@ -83,6 +83,22 @@
             </select>
           </div>
         </div>
+        <div class="form-group">
+          <label for="item-tags">Tags <span class="required">*</span></label>
+          <select id="item-tags" multiple required>
+            <option value="needs-triage" selected>needs-triage</option>
+            <option value="code/feature">code/feature</option>
+            <option value="code/polish">code/polish</option>
+            <option value="code/bugfix">code/bugfix</option>
+            <option value="code/infra">code/infra</option>
+            <option value="code/doc">code/doc</option>
+            <option value="blocked">blocked</option>
+            <option value="schedule">schedule</option>
+            <option value="design">design</option>
+            <option value="admin">admin</option>
+          </select>
+          <small class="help-text">Select one or more. If you leave it empty, the API will apply <strong>needs-triage</strong>.</small>
+        </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" id="cancel-new">Cancel</button>
           <button type="submit" class="btn btn-primary">Create Item</button>
@@ -111,6 +127,7 @@
         <div class="tag-input-container">
           <select id="tag-select" class="move-select">
             <option value="">+ Add tag</option>
+            <option value="needs-triage">needs-triage</option>
             <option value="code/feature">code/feature</option>
             <option value="code/polish">code/polish</option>
             <option value="code/bugfix">code/bugfix</option>
