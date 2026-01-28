@@ -1,4 +1,10 @@
 const express = require('express');
+const crypto = require('crypto');
+
+// Generate unique IDs to prevent collision under concurrent requests
+function uniqueId(prefix) {
+  return `${prefix}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+}
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +50,7 @@ function writeNotifications(data) {
 function addNotification(type, payload) {
   const data = readNotifications();
   data.notifications.push({
-    id: `notif-${Date.now()}`,
+    id: uniqueId('notif'),
     type,
     payload,
     createdAt: new Date().toISOString()
@@ -252,7 +258,7 @@ app.post('/api/items', (req, res) => {
   
   const createdBy = req.body.createdBy || 'unknown';
   const newItem = {
-    id: `item-${Date.now()}`,
+    id: uniqueId('item'),
     number: ticketNumber,
     title,
     description: description || '',
@@ -262,7 +268,7 @@ app.post('/api/items', (req, res) => {
     createdBy: createdBy,
     comments: [
       {
-        id: `comment-${Date.now()}-created`,
+        id: uniqueId('comment-created'),
         text: `Created by ${getUserName(createdBy)}`,
         author: 'system',
         createdAt: new Date().toISOString()
@@ -300,7 +306,7 @@ app.put('/api/items/:id', (req, res) => {
       if ('assignee' in updates && updates.assignee !== item.assignee) {
         const newAssignee = updates.assignee;
         autoComments.push({
-          id: `comment-${Date.now()}-assign`,
+          id: uniqueId('comment-assign'),
           text: newAssignee ? `Assigned to ${getUserName(newAssignee)}` : 'Unassigned',
           author: 'system',
           createdAt: new Date().toISOString()
@@ -319,7 +325,7 @@ app.put('/api/items/:id', (req, res) => {
       if ('blockedBy' in updates && updates.blockedBy !== item.blockedBy) {
         const newBlocked = updates.blockedBy;
         autoComments.push({
-          id: `comment-${Date.now()}-block`,
+          id: uniqueId('comment-block'),
           text: newBlocked ? `Blocked by ${getUserName(newBlocked)}` : 'Unblocked',
           author: 'system',
           createdAt: new Date().toISOString()
@@ -394,7 +400,7 @@ app.post('/api/items/:id/move', (req, res) => {
     const movedByUser = movedBy || item.assignee || 'unknown';
     item.comments = item.comments || [];
     item.comments.push({
-      id: `comment-${Date.now()}-move`,
+      id: uniqueId('comment-move'),
       text: `Moved to ${columnName} by ${getUserName(movedByUser)}`,
       author: 'system',
       createdAt: new Date().toISOString()
@@ -456,7 +462,7 @@ app.post('/api/items/:id/comments', (req, res) => {
     const item = column.items.find(i => i.id === id);
     if (item) {
       const comment = {
-        id: `comment-${Date.now()}`,
+        id: uniqueId('comment'),
         text,
         author: author || 'unknown',
         createdAt: new Date().toISOString()
@@ -519,7 +525,7 @@ app.post('/api/items/:id/subtasks', (req, res) => {
     const item = column.items.find(i => i.id === id);
     if (item) {
       const subtask = {
-        id: `subtask-${Date.now()}`,
+        id: uniqueId('subtask'),
         text,
         completed: false,
         createdAt: new Date().toISOString()
