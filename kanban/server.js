@@ -10,6 +10,13 @@ const fs = require('fs');
 const path = require('path');
 
 const {
+  AppError,
+  asyncHandler,
+  errorHandler,
+  notFoundHandler
+} = require('./middleware/errorHandler');
+
+const {
   validate,
   createItemValidation,
   updateItemValidation,
@@ -279,7 +286,7 @@ app.post('/api/items', validate(createItemValidation), (req, res) => {
   try {
     finalTags = normalizeTags(tags);
   } catch (e) {
-    return res.status(400).json({ error: e.message || 'Invalid tags' });
+    throw AppError.badRequest(e.message || 'Invalid tags');
   }
   
   // Auto-increment ticket number
@@ -333,7 +340,7 @@ app.post('/api/items', validate(createItemValidation), (req, res) => {
     writeData(data);
     res.json(newItem);
   } else {
-    res.status(400).json({ error: 'Invalid column' });
+    throw AppError.badRequest('Invalid column');
   }
 });
 
@@ -348,7 +355,7 @@ app.put('/api/items/:id', validate(updateItemValidation), (req, res) => {
     try {
       updates.tags = normalizeTags(updates.tags);
     } catch (e) {
-      return res.status(400).json({ error: e.message || 'Invalid tags' });
+      throw AppError.badRequest(e.message || 'Invalid tags');
     }
   }
   
@@ -408,7 +415,7 @@ app.put('/api/items/:id', validate(updateItemValidation), (req, res) => {
     }
   }
   
-  res.status(404).json({ error: 'Item not found' });
+  throw AppError.notFound('Item');
 });
 
 // Move item to different column
@@ -431,14 +438,14 @@ app.post('/api/items/:id/move', validate(moveItemValidation), (req, res) => {
   }
   
   if (!item) {
-    return res.status(404).json({ error: 'Item not found' });
+    throw AppError.notFound('Item');
   }
   
   // Add to new column
   const toColumn = data.columns.find(c => c.id === toColumnId);
   if (!toColumn) {
     fromColumn.items.push(item);
-    return res.status(400).json({ error: 'Invalid target column' });
+    throw AppError.badRequest('Invalid target column');
   }
   
   // Track stage history (only if actually changing columns)
@@ -508,7 +515,7 @@ app.delete('/api/items/:id', (req, res) => {
     }
   }
   
-  res.status(404).json({ error: 'Item not found' });
+  throw AppError.notFound('Item');
 });
 
 // Add comment to item
@@ -571,7 +578,7 @@ app.post('/api/items/:id/comments', validate(addCommentValidation), (req, res) =
     }
   }
   
-  res.status(404).json({ error: 'Item not found' });
+  throw AppError.notFound('Item');
 });
 
 // Subtasks
@@ -596,7 +603,7 @@ app.post('/api/items/:id/subtasks', (req, res) => {
     }
   }
   
-  res.status(404).json({ error: 'Item not found' });
+  throw AppError.notFound('Item');
 });
 
 app.put('/api/items/:id/subtasks/:subtaskId', (req, res) => {
@@ -617,7 +624,7 @@ app.put('/api/items/:id/subtasks/:subtaskId', (req, res) => {
     }
   }
   
-  res.status(404).json({ error: 'Subtask not found' });
+  throw AppError.notFound('Subtask');
 });
 
 app.delete('/api/items/:id/subtasks/:subtaskId', (req, res) => {
@@ -636,7 +643,7 @@ app.delete('/api/items/:id/subtasks/:subtaskId', (req, res) => {
     }
   }
   
-  res.status(404).json({ error: 'Subtask not found' });
+  throw AppError.notFound('Subtask');
 });
 
 // Get pending notifications (for Jimmy to poll)
@@ -657,7 +664,7 @@ app.delete('/api/notifications/:id', (req, res) => {
     return res.json(removed);
   }
   
-  res.status(404).json({ error: 'Notification not found' });
+  throw AppError.notFound('Notification');
 });
 
 // Clear all notifications
@@ -665,6 +672,12 @@ app.delete('/api/notifications', (req, res) => {
   writeNotifications({ notifications: [] });
   res.json({ cleared: true });
 });
+
+// 404 handler for unmatched routes
+app.use("/api", notFoundHandler);
+
+// Central error handler (must be last)
+app.use(errorHandler);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Kanban server running on http://0.0.0.0:${PORT}`);
