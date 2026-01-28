@@ -64,7 +64,7 @@ const ITEM_TEMPLATES = {
     id: 'bug',
     name: 'Bug Report',
     titlePrefix: 'Bug:',
-    description: '### Summary
+    description: `### Summary
 
 ### Steps to Reproduce
 1.
@@ -76,7 +76,7 @@ const ITEM_TEMPLATES = {
 
 ### Environment
 - Browser:
-- Device/OS:',
+- Device/OS:`,
     priority: 'high',
     tags: ['bug']
   },
@@ -84,7 +84,7 @@ const ITEM_TEMPLATES = {
     id: 'feature',
     name: 'Feature Request',
     titlePrefix: 'Feature:',
-    description: '### Problem / Motivation
+    description: `### Problem / Motivation
 
 ### Proposed Solution
 
@@ -93,7 +93,7 @@ const ITEM_TEMPLATES = {
 - [ ]
 
 ### Notes
-',
+`,
     priority: 'medium',
     tags: ['code/feature']
   }
