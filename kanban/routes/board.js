@@ -24,6 +24,7 @@ const {
   calculateCycleTime
 } = require('../lib/data');
 const { addNotification } = require('../lib/notifications');
+const { addEvent, EventTypes } = require('../lib/events');
 
 // Get board state
 router.get('/board', (req, res) => {
@@ -200,6 +201,18 @@ router.post('/items', validate(createItemValidation), (req, res) => {
   if (column) {
     column.items.push(newItem);
     writeData(data);
+    
+    // Emit ITEM_CREATED event
+    addEvent(EventTypes.ITEM_CREATED, {
+      itemId: newItem.id,
+      itemNumber: newItem.number,
+      title: newItem.title,
+      column: targetColumnId,
+      priority: newItem.priority,
+      assignee: newItem.assignee,
+      tags: newItem.tags
+    }, finalCreatedBy);
+    
     res.json(newItem);
   } else {
     throw AppError.badRequest('Invalid column');
@@ -211,6 +224,7 @@ router.put('/items/:id', validate(updateItemValidation), (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   const data = readData();
+  const actor = req.headers['x-user'] || req.body.updatedBy || 'system';
 
   // If client tries to clear tags, keep the invariant by defaulting to needs-triage.
   if ('tags' in updates) {
@@ -226,6 +240,14 @@ router.put('/items/:id', validate(updateItemValidation), (req, res) => {
     if (itemIndex !== -1) {
       const item = column.items[itemIndex];
       const autoComments = [];
+      const changes = {};
+      
+      // Track changes for event
+      for (const key of Object.keys(updates)) {
+        if (item[key] !== updates[key]) {
+          changes[key] = { from: item[key], to: updates[key] };
+        }
+      }
       
       // Check for assignment change
       if ('assignee' in updates && updates.assignee !== item.assignee) {
@@ -236,6 +258,15 @@ router.put('/items/:id', validate(updateItemValidation), (req, res) => {
           author: 'system',
           createdAt: new Date().toISOString()
         });
+        
+        // Emit ITEM_ASSIGNED event
+        addEvent(EventTypes.ITEM_ASSIGNED, {
+          itemId: item.id,
+          itemNumber: item.number,
+          title: item.title,
+          fromAssignee: item.assignee,
+          toAssignee: newAssignee
+        }, actor);
         
         // Notify when assigned to Kenny
         if (newAssignee === 'kenny') {
@@ -256,6 +287,23 @@ router.put('/items/:id', validate(updateItemValidation), (req, res) => {
           createdAt: new Date().toISOString()
         });
         
+        // Emit blocked/unblocked event
+        if (newBlocked) {
+          addEvent(EventTypes.ITEM_BLOCKED, {
+            itemId: item.id,
+            itemNumber: item.number,
+            title: item.title,
+            blockedBy: newBlocked
+          }, actor);
+        } else {
+          addEvent(EventTypes.ITEM_UNBLOCKED, {
+            itemId: item.id,
+            itemNumber: item.number,
+            title: item.title,
+            wasBlockedBy: item.blockedBy
+          }, actor);
+        }
+        
         // Notify if blocked by Kenny
         if (newBlocked === 'kenny') {
           addNotification('blocked_by_kenny', {
@@ -273,6 +321,17 @@ router.put('/items/:id', validate(updateItemValidation), (req, res) => {
       
       column.items[itemIndex] = { ...item, ...updates };
       writeData(data);
+      
+      // Emit ITEM_UPDATED event (if there were changes beyond assignment/blocking)
+      if (Object.keys(changes).length > 0) {
+        addEvent(EventTypes.ITEM_UPDATED, {
+          itemId: item.id,
+          itemNumber: item.number,
+          title: item.title,
+          changes
+        }, actor);
+      }
+      
       return res.json(column.items[itemIndex]);
     }
   }
@@ -310,6 +369,8 @@ router.post('/items/:id/move', validate(moveItemValidation), (req, res) => {
     throw AppError.badRequest('Invalid target column');
   }
   
+  const actor = movedBy || item.assignee || 'unknown';
+  
   // Track stage history (only if actually changing columns)
   if (fromColumn.id !== toColumnId) {
     if (!item.stageHistory) {
@@ -330,6 +391,15 @@ router.post('/items/:id/move', validate(moveItemValidation), (req, res) => {
       author: 'system',
       createdAt: new Date().toISOString()
     });
+    
+    // Emit ITEM_MOVED event
+    addEvent(EventTypes.ITEM_MOVED, {
+      itemId: item.id,
+      itemNumber: item.number,
+      title: item.title,
+      fromColumn: fromColumn.id,
+      toColumn: toColumnId
+    }, actor);
     
     // Notify Kenny when Jimmy moves to Done
     if (toColumnId === 'done' && movedByUser === 'jimmy') {
@@ -367,12 +437,22 @@ router.post('/items/:id/move', validate(moveItemValidation), (req, res) => {
 router.delete('/items/:id', (req, res) => {
   const { id } = req.params;
   const data = readData();
+  const actor = req.headers['x-user'] || 'system';
   
   for (const column of data.columns) {
     const itemIndex = column.items.findIndex(i => i.id === id);
     if (itemIndex !== -1) {
       const deleted = column.items.splice(itemIndex, 1)[0];
       writeData(data);
+      
+      // Emit ITEM_DELETED event
+      addEvent(EventTypes.ITEM_DELETED, {
+        itemId: deleted.id,
+        itemNumber: deleted.number,
+        title: deleted.title,
+        fromColumn: column.id
+      }, actor);
+      
       return res.json(deleted);
     }
   }
@@ -399,6 +479,15 @@ router.post('/items/:id/comments', validate(addCommentValidation), (req, res) =>
       item.comments.push(comment);
       writeData(data);
       
+      // Emit COMMENT_ADDED event
+      addEvent(EventTypes.COMMENT_ADDED, {
+        itemId: item.id,
+        itemNumber: item.number,
+        itemTitle: item.title,
+        commentId: comment.id,
+        commentText: text
+      }, author || 'unknown');
+      
       // Detect agent mentions (@pm/@claude->pm, @dev/@codex->dev, @qa/@gemini->qa)
       const mentionMap = {
         jimmy: "pm", pm: "pm", claude: "pm",
@@ -410,6 +499,15 @@ router.post('/items/:id/comments', validate(addCommentValidation), (req, res) =>
       const uniqueAgents = [...new Set(mentions)];
       
       for (const agent of uniqueAgents) {
+        // Emit AGENT_MENTIONED event
+        addEvent(EventTypes.AGENT_MENTIONED, {
+          itemId: item.id,
+          itemNumber: item.number,
+          itemTitle: item.title,
+          commentId: comment.id,
+          targetAgent: agent
+        }, author || 'unknown');
+        
         addNotification('mention_agent', {
           itemId: item.id,
           itemNumber: item.number,
@@ -448,6 +546,7 @@ router.post('/items/:id/subtasks', (req, res) => {
   const { id } = req.params;
   const { text } = req.body;
   const data = readData();
+  const actor = req.headers['x-user'] || 'system';
   
   for (const column of data.columns) {
     const item = column.items.find(i => i.id === id);
@@ -461,6 +560,16 @@ router.post('/items/:id/subtasks', (req, res) => {
       item.subtasks = item.subtasks || [];
       item.subtasks.push(subtask);
       writeData(data);
+      
+      // Emit SUBTASK_ADDED event
+      addEvent(EventTypes.SUBTASK_ADDED, {
+        itemId: item.id,
+        itemNumber: item.number,
+        itemTitle: item.title,
+        subtaskId: subtask.id,
+        subtaskText: text
+      }, actor);
+      
       return res.json(subtask);
     }
   }
@@ -472,15 +581,34 @@ router.put('/items/:id/subtasks/:subtaskId', (req, res) => {
   const { id, subtaskId } = req.params;
   const { completed, text } = req.body;
   const data = readData();
+  const actor = req.headers['x-user'] || 'system';
   
   for (const column of data.columns) {
     const item = column.items.find(i => i.id === id);
     if (item && item.subtasks) {
       const subtask = item.subtasks.find(s => s.id === subtaskId);
       if (subtask) {
-        if (typeof completed === 'boolean') subtask.completed = completed;
-        if (text !== undefined) subtask.text = text;
+        const changes = {};
+        if (typeof completed === 'boolean' && subtask.completed !== completed) {
+          changes.completed = { from: subtask.completed, to: completed };
+          subtask.completed = completed;
+        }
+        if (text !== undefined && subtask.text !== text) {
+          changes.text = { from: subtask.text, to: text };
+          subtask.text = text;
+        }
         writeData(data);
+        
+        // Emit SUBTASK_UPDATED event
+        if (Object.keys(changes).length > 0) {
+          addEvent(EventTypes.SUBTASK_UPDATED, {
+            itemId: item.id,
+            itemNumber: item.number,
+            subtaskId: subtask.id,
+            changes
+          }, actor);
+        }
+        
         return res.json(subtask);
       }
     }
@@ -492,6 +620,7 @@ router.put('/items/:id/subtasks/:subtaskId', (req, res) => {
 router.delete('/items/:id/subtasks/:subtaskId', (req, res) => {
   const { id, subtaskId } = req.params;
   const data = readData();
+  const actor = req.headers['x-user'] || 'system';
   
   for (const column of data.columns) {
     const item = column.items.find(i => i.id === id);
@@ -500,6 +629,15 @@ router.delete('/items/:id/subtasks/:subtaskId', (req, res) => {
       if (idx !== -1) {
         const removed = item.subtasks.splice(idx, 1)[0];
         writeData(data);
+        
+        // Emit SUBTASK_DELETED event
+        addEvent(EventTypes.SUBTASK_DELETED, {
+          itemId: item.id,
+          itemNumber: item.number,
+          subtaskId: removed.id,
+          subtaskText: removed.text
+        }, actor);
+        
         return res.json(removed);
       }
     }
