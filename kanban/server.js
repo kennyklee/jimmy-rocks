@@ -465,8 +465,8 @@ app.post('/api/items/:id/comments', (req, res) => {
       item.comments.push(comment);
       writeData(data);
       
-      // Create notification if @jimmy is mentioned
-      if (text.toLowerCase().includes('@jimmy')) {
+      // Create notification if @jimmy, @pm, @dev, or @qa is mentioned
+      if (/@(jimmy|pm|dev|qa)\b/i.test(text)) {
         addNotification('mention_jimmy', {
           itemId: item.id,
           itemNumber: item.number,
