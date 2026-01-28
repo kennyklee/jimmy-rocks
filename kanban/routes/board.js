@@ -342,6 +342,7 @@ router.post('/items', validate(createItemValidation), (req, res) => {
     description: description || '',
     priority: priority || 'medium',
     assignee: req.body.assignee || 'jimmy',
+    dueDate: dueDate || null,
     tags: finalTags,
     createdAt: new Date().toISOString(),
     createdBy: finalCreatedBy,

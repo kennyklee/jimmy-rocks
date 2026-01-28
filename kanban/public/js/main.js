@@ -30,6 +30,7 @@ const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
 const detailDueDate = document.getElementById('detail-due-date');
+const itemDueDate = document.getElementById('item-due-date');
 const itemAssignee = document.getElementById('item-assignee');
 const tagSelect = document.getElementById('tag-select');
 const templateSelect = document.getElementById('item-template');
@@ -227,6 +228,7 @@ async function handleNewItemSubmit(e) {
   const data = {
     title: document.getElementById('item-title').value,
     description: document.getElementById('item-description').value,
+    dueDate: itemDueDate ? itemDueDate.value || null : null,
     priority: document.getElementById('item-priority').value,
     assignee: document.getElementById('item-assignee').value,
     columnId: document.getElementById('item-column').value,
