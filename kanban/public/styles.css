@@ -12,6 +12,7 @@
   --bg-tertiary: #1c1c1f;
   --bg-hover: #252529;
   --border-color: #27272a;
+  --border: var(--border-color);
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
@@ -24,6 +25,10 @@
   --radius: 8px;
   --radius-sm: 6px;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 28px -12px rgba(0,0,0,0.65), 0 8px 18px -12px rgba(0,0,0,0.55);
+  --shadow-xl: 0 22px 60px -22px rgba(0,0,0,0.75), 0 10px 26px -18px rgba(0,0,0,0.55);
+  --ring: 0 0 0 4px rgba(99, 102, 241, 0.22);
+  --radius-lg: 14px;
 }
 
 /* Theme: Light */
@@ -33,12 +38,17 @@
   --bg-tertiary: #f1f3f4;
   --bg-hover: #e8eaed;
   --border-color: #dadce0;
+  --border: var(--border-color);
   --text-primary: #202124;
   --text-secondary: #5f6368;
   --text-muted: #80868b;
   --accent: #4f46e5;
   --accent-hover: #6366f1;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 14px 30px -18px rgba(0,0,0,0.22), 0 8px 18px -16px rgba(0,0,0,0.16);
+  --shadow-xl: 0 22px 60px -32px rgba(0,0,0,0.28), 0 12px 26px -22px rgba(0,0,0,0.18);
+  --ring: 0 0 0 4px rgba(79, 70, 229, 0.18);
+  --radius-lg: 14px;
 }
 
 /* System preference (when data-theme="system" or not set and system prefers light) */
@@ -49,12 +59,17 @@
     --bg-tertiary: #f1f3f4;
     --bg-hover: #e8eaed;
     --border-color: #dadce0;
+  --border: var(--border-color);
     --text-primary: #202124;
     --text-secondary: #5f6368;
     --text-muted: #80868b;
     --accent: #4f46e5;
     --accent-hover: #6366f1;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 14px 30px -18px rgba(0,0,0,0.22), 0 8px 18px -16px rgba(0,0,0,0.16);
+  --shadow-xl: 0 22px 60px -32px rgba(0,0,0,0.28), 0 12px 26px -22px rgba(0,0,0,0.18);
+  --ring: 0 0 0 4px rgba(79, 70, 229, 0.18);
+  --radius-lg: 14px;
   }
 }
 
@@ -315,14 +330,16 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
   z-index: 100;
 }
 
@@ -332,57 +349,82 @@ body {
 }
 
 .modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-xl);
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.modal-overlay.active .modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .modal-large {
-  max-width: 600px;
+  max-width: 720px;
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 86%, transparent), transparent);
 }
 
 .modal-header h2 {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .modal-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-muted);
-  font-size: 24px;
+  font-size: 22px;
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .modal-close:hover {
-  background: var(--bg-hover);
+  background: color-mix(in srgb, var(--bg-hover) 70%, transparent);
+  border-color: color-mix(in srgb, var(--border-color) 70%, transparent);
   color: var(--text-primary);
 }
 
+.modal-close:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
 .modal-body {
-  padding: 24px;
+  padding: 20px;
   overflow-y: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modal-overlay {
+    transition: none;
+  }
 }
 
 /* Form */
@@ -407,12 +449,19 @@ form {
 .form-group select {
   width: 100%;
   padding: 10px 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  border-radius: 10px;
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.form-group input:hover,
+.form-group textarea:hover,
+.form-group select:hover {
+  border-color: color-mix(in srgb, var(--border-color) 70%, var(--accent) 30%);
 }
 
 .form-group input:focus,
@@ -420,6 +469,18 @@ form {
 .form-group select:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--ring);
+  background: color-mix(in srgb, var(--bg-tertiary) 78%, transparent);
+}
+
+.form-group select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
 }
 
 .form-group textarea {
@@ -470,18 +531,36 @@ form {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 20px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 .move-select {
-  padding: 8px 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  border-radius: 10px;
   color: var(--text-primary);
   font-size: 13px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+
+.move-select:hover {
+  border-color: color-mix(in srgb, var(--border-color) 70%, var(--accent) 30%);
+}
+
+.move-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
 }
 
 /* Comments */
@@ -495,16 +574,19 @@ form {
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-  max-height: 200px;
+  gap: 10px;
+  margin-bottom: 14px;
+  max-height: 260px;
   overflow-y: auto;
+  padding-right: 2px;
 }
 
 .comment {
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
-  padding: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-tertiary) 86%, transparent), color-mix(in srgb, var(--bg-secondary) 70%, transparent));
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  border-radius: 12px;
+  padding: 12px 12px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02);
 }
 
 .comment-header {
@@ -1028,10 +1110,16 @@ form {
 
 /* Ticket number in modal header */
 .detail-ticket-number {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
   margin-right: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 70%, transparent);
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
 }
 
 /* Ticket number - match comment color */
@@ -1278,25 +1366,32 @@ form {
 
 /* Contenteditable comment input */
 .comment-input {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 12px;
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 13px;
   color: var(--text-primary);
-  min-height: 40px;
-  max-height: 150px;
+  min-height: 42px;
+  max-height: 180px;
   overflow-y: auto;
   outline: none;
   flex: 1;
   font-family: inherit;
-  line-height: 1.4;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.comment-input:hover {
+  border-color: color-mix(in srgb, var(--border-color) 70%, var(--accent) 30%);
 }
 
 .comment-input:focus {
   border-color: var(--accent);
+  box-shadow: var(--ring);
+  background: color-mix(in srgb, var(--bg-tertiary) 78%, transparent);
 }
 
 .comment-input:empty:before {
@@ -1444,12 +1539,20 @@ form {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-tertiary) 55%, transparent);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
-.subtask-item:last-child {
-  border-bottom: none;
+.subtask-item + .subtask-item {
+  margin-top: 8px;
+}
+
+.subtask-item:hover {
+  border-color: color-mix(in srgb, var(--border-color) 65%, var(--accent) 35%);
+  background: color-mix(in srgb, var(--bg-tertiary) 72%, transparent);
 }
 
 .subtask-checkbox {
@@ -1496,17 +1599,24 @@ form {
 
 .subtask-input {
   flex: 1;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 10px;
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  border-radius: 12px;
+  padding: 9px 12px;
   font-size: 13px;
   color: var(--text-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.subtask-input:hover {
+  border-color: color-mix(in srgb, var(--border-color) 70%, var(--accent) 30%);
 }
 
 .subtask-input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--ring);
+  background: color-mix(in srgb, var(--bg-tertiary) 78%, transparent);
 }
 
 .subtask-input::placeholder {
