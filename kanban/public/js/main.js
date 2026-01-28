@@ -509,6 +509,13 @@ function openKeyboardSelectedCard() {
   }
 }
 
+
+function focusMoveDropdown() {
+  if (!detailMoveColumn) return;
+  detailMoveColumn.focus();
+  detailMoveColumn.click();
+}
+
 // Initialize
 async function init() {
   initTheme();
@@ -582,8 +589,9 @@ async function init() {
                     document.activeElement.tagName === 'TEXTAREA' ||
                     document.activeElement.isContentEditable;
     
-    const modalOpen = newItemModal.classList.contains('active') || 
-                      itemDetailModal.classList.contains('active');
+    const newModalOpen = newItemModal.classList.contains('active');
+    const detailModalOpen = itemDetailModal.classList.contains('active');
+    const modalOpen = newModalOpen || detailModalOpen;
     
     if (e.key === 'Escape') {
       closeNewItemModal();
@@ -594,7 +602,27 @@ async function init() {
     if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !inInput && !modalOpen) {
       openNewItemModal();
     }
-    
+
+    if (e.key === 'e' && !e.ctrlKey && !e.metaKey && !inInput && !modalOpen && keyboardSelectedIndex >= 0) {
+      e.preventDefault();
+      openKeyboardSelectedCard();
+    }
+
+    if (e.key === 'm' && !e.ctrlKey && !e.metaKey && !inInput) {
+      if (detailModalOpen) {
+        e.preventDefault();
+        focusMoveDropdown();
+      } else if (!modalOpen && keyboardSelectedIndex >= 0) {
+        e.preventDefault();
+        openKeyboardSelectedCard();
+        setTimeout(() => {
+          if (itemDetailModal.classList.contains('active')) {
+            focusMoveDropdown();
+          }
+        }, 0);
+      }
+    }
+
     if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey && !inInput) {
       e.preventDefault();
       performUndo();
