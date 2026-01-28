@@ -473,11 +473,14 @@ app.post('/api/items/:id/move', (req, res) => {
     }
   }
   
-  if (typeof position === 'number') {
-    toColumn.items.splice(position, 0, item);
-  } else {
-    toColumn.items.push(item);
-  }
+  // Default insert behavior: append to bottom for most columns.
+  // Special case: when moving to Done without an explicit position,
+  // place the item at the top (newest first).
+  const insertIndex = (typeof position === 'number')
+    ? position
+    : (toColumnId === 'done' ? 0 : toColumn.items.length);
+
+  toColumn.items.splice(insertIndex, 0, item);
   
   writeData(data);
   res.json({ item, fromColumn: fromColumn.id, toColumn: toColumnId });
