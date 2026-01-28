@@ -278,7 +278,7 @@ const api = {
 
 // Render Functions
 function renderBoard() {
-  const ARCHIVE_DAYS = 7;
+  const ARCHIVE_DAYS = 1; // Changed from 7 to 1 for testing
   const archiveCutoff = Date.now() - (ARCHIVE_DAYS * 24 * 60 * 60 * 1000);
   
   board.innerHTML = boardData.columns.map(column => {
@@ -369,7 +369,7 @@ function renderItem(item) {
     : '';
   
   return `
-    <div class="item ${blockedClass}" data-item-id="${item.id}" draggable="true">
+    <div class="item ${blockedClass}" data-item-id="${item.id}">
       <div class="item-header">
         <span class="item-title">${escapeHtml(item.title)}</span>
         ${blockedBadge}
@@ -379,9 +379,11 @@ function renderItem(item) {
       ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
       <div class="item-footer">
         <span class="priority-badge ${priorityClass}">${item.priority}</span>
-        <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
         ${subtaskHtml}
-        ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ''}
+        <span class="item-footer-right">
+          ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ''}
+          <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
+        </span>
       </div>
     </div>
   `;
@@ -508,6 +510,11 @@ async function handleAddSubtask(e) {
   }
 }
 
+// Make functions globally accessible for onclick handlers in dynamically rendered HTML
+window.toggleSubtask = toggleSubtask;
+window.deleteSubtask = deleteSubtask;
+window.toggleArchived = toggleArchived;
+
 // Modal Functions
 function openNewItemModal() {
   newItemModal.classList.add('active');
@@ -566,40 +573,8 @@ function closeItemDetailModal() {
 }
 
 // Drag and Drop
-function setupDragAndDrop() {
-  const items = document.querySelectorAll('.item');
-  const columns = document.querySelectorAll('.column-items');
-  
-  items.forEach(item => {
-    item.addEventListener('dragstart', handleDragStart);
-    item.addEventListener('dragend', handleDragEnd);
-    item.addEventListener('click', handleItemClick);
-  });
-  
-  columns.forEach(column => {
-    column.addEventListener('dragover', handleDragOver);
-    column.addEventListener('dragleave', handleDragLeave);
-    column.addEventListener('drop', handleDrop);
-  });
-}
-
-let draggedItem = null;
-
-function handleDragStart(e) {
-  draggedItem = e.target;
-  e.target.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-
-function handleDragEnd(e) {
-  e.target.classList.remove('dragging');
-  document.querySelectorAll('.column-items').forEach(col => {
-    col.classList.remove('drag-over');
-  });
-  if (dropIndicator) dropIndicator.style.display = 'none';
-}
-
-// Drop indicator element
+// SortableJS instances and drop indicator
+let sortableInstances = [];
 let dropIndicator = null;
 
 function ensureDropIndicator() {
@@ -611,32 +586,33 @@ function ensureDropIndicator() {
   return dropIndicator;
 }
 
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('drag-over');
-  
-  const column = e.currentTarget;
-  const afterElement = getDragAfterElement(column, e.clientY);
+function positionDropIndicator(column, y) {
   const indicator = ensureDropIndicator();
-  
-  // Position the indicator absolutely
   const columnRect = column.getBoundingClientRect();
+  const items = [...column.querySelectorAll('.item:not(.sortable-drag)')];
+  
   let indicatorY;
+  
+  // Find where to position the indicator
+  let afterElement = null;
+  for (const item of items) {
+    const box = item.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0) {
+      afterElement = item;
+      break;
+    }
+  }
   
   if (afterElement) {
     const rect = afterElement.getBoundingClientRect();
     indicatorY = rect.top - 4;
+  } else if (items.length > 0) {
+    const lastItem = items[items.length - 1];
+    const rect = lastItem.getBoundingClientRect();
+    indicatorY = rect.bottom + 4;
   } else {
-    // End of column
-    const items = column.querySelectorAll('.item:not(.dragging)');
-    if (items.length > 0) {
-      const lastItem = items[items.length - 1];
-      const rect = lastItem.getBoundingClientRect();
-      indicatorY = rect.bottom + 4;
-    } else {
-      indicatorY = columnRect.top + 8;
-    }
+    indicatorY = columnRect.top + 8;
   }
   
   indicator.style.display = 'block';
@@ -645,106 +621,93 @@ function handleDragOver(e) {
   indicator.style.width = (columnRect.width - 16) + 'px';
 }
 
-// Get the element after which we should insert the dragged item
-function getDragAfterElement(column, y) {
-  const items = [...column.querySelectorAll('.item:not(.dragging)')];
-  
-  return items.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    
-    if (offset < 0 && offset > closest.offset) {
-      return { offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-function handleDragLeave(e) {
-  // Only remove if actually leaving the column (not entering a child)
-  if (!e.currentTarget.contains(e.relatedTarget)) {
-    e.currentTarget.classList.remove('drag-over');
-    if (dropIndicator) dropIndicator.style.display = 'none';
+function hideDropIndicator() {
+  if (dropIndicator) {
+    dropIndicator.style.display = 'none';
   }
 }
 
-async function handleDrop(e) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (dropIndicator) dropIndicator.style.display = 'none';
+// Safety net: hide drop indicator on any touch/mouse end
+document.addEventListener('touchend', () => setTimeout(hideDropIndicator, 100), { passive: true });
+document.addEventListener('touchcancel', hideDropIndicator, { passive: true });
+document.addEventListener('mouseup', () => setTimeout(hideDropIndicator, 100));
+
+function setupDragAndDrop() {
+  // Clean up previous instances
+  sortableInstances.forEach(s => s.destroy());
+  sortableInstances = [];
   
-  if (!draggedItem) return;
+  // Add click handlers to items
+  document.querySelectorAll('.item').forEach(item => {
+    item.addEventListener('click', handleItemClick);
+  });
   
-  const itemId = draggedItem.dataset.itemId;
-  
-  // Find original column and position for undo
-  let fromColumn = null;
-  let fromPosition = null;
-  for (const col of boardData.columns) {
-    const idx = col.items.findIndex(i => i.id === itemId);
-    if (idx !== -1) {
-      fromColumn = col.id;
-      fromPosition = idx;
-      break;
-    }
-  }
-  const toColumnId = e.currentTarget.dataset.columnId;
-  
-  // Calculate position based on where item was dropped
-  const afterElement = getDragAfterElement(e.currentTarget, e.clientY);
-  let position = null;
-  
-  if (afterElement) {
-    // Find the index of the element we're dropping before
-    const column = boardData.columns.find(c => c.id === toColumnId);
-    if (column) {
-      const afterItemId = afterElement.dataset.itemId;
-      position = column.items.findIndex(i => i.id === afterItemId);
+  // Initialize SortableJS on each column
+  document.querySelectorAll('.column-items').forEach(column => {
+    const sortable = new Sortable(column, {
+      group: 'kanban',
+      scroll: true,
+      scrollSensitivity: 150,
+      scrollSpeed: 15,
+      bubbleScroll: true,
+      forceAutoScrollFallback: true,
+      animation: 150,
+      ghostClass: 'dragging',
+      delay: 150,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
       
-      // Adjust for same-column reorder: if dragged item is above target, 
-      // the index will shift down by 1 after removal
-      const draggedIndex = column.items.findIndex(i => i.id === itemId);
-      if (draggedIndex !== -1 && draggedIndex < position) {
-        position--;
+      onStart: function(evt) {
+        evt.item.classList.add('dragging');
+      },
+      
+      onMove: function(evt) {
+        // Position drop indicator
+        const y = evt.originalEvent?.touches?.[0]?.clientY || evt.originalEvent?.clientY || 0;
+        if (y) positionDropIndicator(evt.to, y);
+      },
+      
+      onUnchoose: function(evt) {
+        // Hide indicator when drag is cancelled
+        hideDropIndicator();
+        evt.item.classList.remove('dragging');
+      },
+      
+      onEnd: async function(evt) {
+        evt.item.classList.remove('dragging');
+        hideDropIndicator();
+        
+        // Add drop animation
+        evt.item.classList.add('just-dropped');
+        evt.item.addEventListener('animationend', () => {
+          evt.item.classList.remove('just-dropped');
+        }, { once: true });
+        
+        const itemId = evt.item.dataset.itemId;
+        const fromColumnId = evt.from.dataset.columnId;
+        const toColumnId = evt.to.dataset.columnId;
+        const newIndex = evt.newIndex;
+        
+        // Find original position for undo
+        let fromPosition = evt.oldIndex;
+        
+        // Store undo data
+        if (fromColumnId !== toColumnId || fromPosition !== newIndex) {
+          pushUndo({ type: 'move', itemId, fromColumn: fromColumnId, fromPosition });
+        }
+        
+        // Call API to persist the move
+        try {
+          await api.moveItem(itemId, toColumnId, newIndex, currentUser);
+          await refreshBoard();
+        } catch (err) {
+          await refreshBoard();
+        }
       }
-    }
-  }
-  
-  // Animate cards parting before the drop
-  const targetColumn = document.querySelector(`[data-column-id="${toColumnId}"]`);
-  
-  if (targetColumn) {
-    // Add gap where card will be inserted
-    if (afterElement) {
-      afterElement.style.transition = 'margin-top 0.15s ease-out';
-      afterElement.style.marginTop = '60px';
-    } else {
-      // Dropping at end - add padding to column
-      targetColumn.style.transition = 'padding-bottom 0.15s ease-out';
-      targetColumn.style.paddingBottom = '60px';
-    }
-  }
-  
-  // Brief wait for gap animation
-  await new Promise(r => setTimeout(r, 10));
-  
-  // Store undo data before move
-  if (fromColumn !== toColumnId || fromPosition !== position) {
-    pushUndo({ type: 'move', itemId, fromColumn, fromPosition });
-  }
-  
-  await api.moveItem(itemId, toColumnId, position, currentUser);
-  await refreshBoard();
-  
-  // Animate the dropped card
-  const droppedCard = document.querySelector(`[data-item-id="${itemId}"]`);
-  if (droppedCard) {
-    droppedCard.classList.add('just-dropped');
-    droppedCard.addEventListener('animationend', () => {
-      droppedCard.classList.remove('just-dropped');
-    }, { once: true });
-  }
+    });
+    
+    sortableInstances.push(sortable);
+  });
 }
 
 function handleItemClick(e) {
@@ -973,11 +936,9 @@ function formatMentions(text) {
 }
 
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  if (!text) return "";
+  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-
 async function refreshBoard() {
   // Save scroll positions before refresh
   const scrollPositions = {};
@@ -1299,7 +1260,7 @@ async function init() {
       for (const col of boardData.columns) {
         const item = col.items.find(i => i.id === itemId);
         if (item) {
-          openItemDetailModal(item);
+          openItemDetail(item);
           break;
         }
       }
@@ -1361,6 +1322,17 @@ async function init() {
   
   // Check for deep link (open task from URL)
   checkDeepLink();
+  
+  // Default keyboard selection to first Todo card
+  const todoColumn = document.querySelector('[data-column-id="todo"] .column-items');
+  if (todoColumn) {
+    const firstTodoCard = todoColumn.querySelector('.item:not(.search-hidden)');
+    if (firstTodoCard) {
+      const allCards = getAllVisibleCards();
+      const idx = allCards.indexOf(firstTodoCard);
+      if (idx >= 0) updateKeyboardSelection(idx);
+    }
+  }
   
   // Poll for updates every 10 seconds
   setInterval(async () => {

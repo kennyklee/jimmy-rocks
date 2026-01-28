@@ -591,8 +591,53 @@ form {
   opacity: 0.5;
 }
 
-.column-items.drag-over {
-  background: rgba(99, 102, 241, 0.05);
+/* Drop indicator - purple line with dots */
+.drop-indicator { display:none !important; } .drop-placeholder {
+  position: fixed;
+  height: 4px;
+  background: #a78bfa;
+  border-radius: 4px;
+  z-index: 9999;
+  pointer-events: none;
+  display: none;
+  box-shadow: 0 0 8px #a78bfa, 0 0 16px #a78bfa;
+}
+
+.drop-indicator::before,
+.drop-indicator::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #a78bfa;
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 8px #a78bfa;
+}
+
+.drop-indicator::before {
+  left: -6px;
+}
+
+.drop-indicator::after {
+  right: -6px;
+}
+
+/* Card drop animation */
+@keyframes cardDropped {
+  0% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 2px #a78bfa, 0 4px 12px rgba(0,0,0,0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+.item.just-dropped {
+  animation: cardDropped 0.3s ease-out;
 }
 
 /* Assignee Badge */
@@ -826,7 +871,7 @@ form {
 }
 
 /* Drop indicator line */
-.drop-indicator {
+.drop-indicator { display:none !important; } .drop-placeholder {
   height: 3px;
   background: var(--accent);
   border-radius: 2px;
@@ -856,7 +901,7 @@ form {
 }
 
 /* Drop indicator - more visible */
-.drop-indicator {
+.drop-indicator { display:none !important; } .drop-placeholder {
   height: 4px !important;
   background: #a78bfa !important;
   margin: 8px 0 !important;
@@ -880,7 +925,7 @@ form {
 }
 
 /* Ensure drop indicator is above cards */
-.drop-indicator {
+.drop-indicator { display:none !important; } .drop-placeholder {
   position: relative !important;
   z-index: 100 !important;
 }
@@ -917,7 +962,7 @@ form {
 }
 
 /* Absolutely positioned drop indicator */
-.drop-indicator {
+.drop-indicator { display:none !important; } .drop-placeholder {
   position: fixed !important;
   height: 4px !important;
   background: #a78bfa !important;
@@ -983,9 +1028,15 @@ form {
 }
 
 /* Assignee badge in footer */
-.item-footer .assignee-badge {
+.item-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
-  margin-right: 4px;
+}
+
+.item-footer .assignee-badge {
+  margin-right: 0;
 }
 
 .item-footer {
@@ -1499,13 +1550,30 @@ form {
 .item-subtasks .progress-bar {
   width: 40px;
   height: 4px;
-  background: var(--bg-tertiary);
+  background: rgba(255,255,255,0.2);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .item-subtasks .progress-fill {
+  display: block;
   height: 100%;
-  background: var(--accent);
-  transition: width 0.2s;
+  background: #22c55e;
+  border-radius: 2px;
+}
+
+/* OVERRIDE: Purple box placeholder instead of line */
+.drop-indicator {
+  display: none !important;
+}
+
+.item.dragging {
+  opacity: 1 !important;
+  background: rgba(99, 102, 241, 0.3) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.item.dragging > * {
+  opacity: 0 !important;
 }
