@@ -126,7 +126,7 @@ function getUserName(userId) {
   return USERS[userId]?.name || userId || 'Unknown';
 }
 
-function renderAssigneeOptions(selectEl) {
+function renderAssigneeOptions(selectEl, includeUnassigned = true) {
   if (!selectEl) return;
 
   const currentValue = selectEl.value;
@@ -135,10 +135,12 @@ function renderAssigneeOptions(selectEl) {
   selectEl.innerHTML = "";
 
   // Unassigned option
-  const unassigned = document.createElement("option");
-  unassigned.value = "";
-  unassigned.textContent = "Unassigned";
-  selectEl.appendChild(unassigned);
+  if (includeUnassigned) {
+    const unassigned = document.createElement("option");
+    unassigned.value = "";
+    unassigned.textContent = "Unassigned";
+    selectEl.appendChild(unassigned);
+  }
 
   // User options
   users.forEach(u => {
@@ -1002,7 +1004,7 @@ async function init() {
   initTheme();
 
   // Populate user/assignee dropdowns from USERS
-  renderAssigneeOptions(userSelect);
+  renderAssigneeOptions(userSelect, false);
   renderAssigneeOptions(itemAssignee);
   renderAssigneeOptions(detailAssignee);
   
