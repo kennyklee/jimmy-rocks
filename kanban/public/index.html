@@ -27,12 +27,7 @@
       <div class="header-right">
         <button id="theme-toggle" class="theme-toggle" title="Toggle theme">🌙</button>
         <a href="/metrics.html" class="btn btn-secondary">📊 Metrics</a>
-        <select id="user-select" class="user-select">
-          <option value="kenny">Kenny</option>
-          <option value="jimmy">Jimmy</option>
-            <option value="dev">Dev</option>
-            <option value="qa">QA</option>
-        </select>
+        <select id="user-select" class="user-select"></select>
         <button class="btn btn-primary" id="new-item-btn">
           <span class="btn-icon">+</span>
           New Item
@@ -73,13 +68,7 @@
           </div>
           <div class="form-group">
             <label for="item-assignee">Assignee</label>
-            <select id="item-assignee">
-              <option value="jimmy" selected>Jimmy</option>
-              <option value="dev">Dev</option>
-              <option value="qa">QA</option>
-              <option value="kenny">Kenny</option>
-              <option value="">Unassigned</option>
-            </select>
+            <select id="item-assignee"></select>
           </div>
         </div>
         <div class="form-row">
@@ -136,13 +125,7 @@
         <div class="detail-description" id="detail-description"></div>
         
         <div class="detail-actions">
-          <select id="detail-assignee" class="move-select">
-            <option value="jimmy">Jimmy</option>
-            <option value="dev">Dev</option>
-            <option value="qa">QA</option>
-            <option value="kenny">Kenny</option>
-            <option value="">Unassigned</option>
-          </select>
+          <select id="detail-assignee" class="move-select"></select>
           <select id="detail-move-column" class="move-select">
             <option value="backlog">Backlog</option>
             <option value="todo">Todo</option>

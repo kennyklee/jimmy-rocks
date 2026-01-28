@@ -126,6 +126,32 @@ function getUserName(userId) {
   return USERS[userId]?.name || userId || 'Unknown';
 }
 
+function renderAssigneeOptions(selectEl) {
+  if (!selectEl) return;
+
+  const currentValue = selectEl.value;
+  const users = Object.values(USERS).filter(u => u.id !== "system");
+
+  selectEl.innerHTML = "";
+
+  // Unassigned option
+  const unassigned = document.createElement("option");
+  unassigned.value = "";
+  unassigned.textContent = "Unassigned";
+  selectEl.appendChild(unassigned);
+
+  // User options
+  users.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = u.name;
+    selectEl.appendChild(opt);
+  });
+
+  // Restore selection if possible
+  selectEl.value = currentValue;
+}
+
 // DOM Elements
 const board = document.getElementById('board');
 const userSelect = document.getElementById('user-select');
@@ -249,6 +275,7 @@ const commentForm = document.getElementById('comment-form');
 const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
+const itemAssignee = document.getElementById('item-assignee');
 const tagSelect = document.getElementById('tag-select');
 const detailTags = document.getElementById('detail-tags');
 
@@ -555,6 +582,10 @@ window.toggleArchived = toggleArchived;
 
 // Modal Functions
 function openNewItemModal() {
+  renderAssigneeOptions(itemAssignee);
+  // Default assignee to current user when opening the modal
+  if (currentUser) itemAssignee.value = currentUser;
+
   newItemModal.classList.add('active');
   document.getElementById('item-title').focus();
 }
@@ -580,6 +611,7 @@ function openItemDetail(item) {
   document.getElementById('detail-author').textContent = `by ${item.createdBy}`;
   
   // Set assignee
+  renderAssigneeOptions(detailAssignee);
   detailAssignee.value = item.assignee || '';
   
   // Render tags
@@ -968,20 +1000,31 @@ function updateUrlForTask(taskId) {
 async function init() {
   // Initialize theme
   initTheme();
+
+  // Populate user/assignee dropdowns from USERS
+  renderAssigneeOptions(userSelect);
+  renderAssigneeOptions(itemAssignee);
+  renderAssigneeOptions(detailAssignee);
   
   // Load user preference
   const savedUser = localStorage.getItem('kanban-user');
-  if (savedUser && ['kenny', 'jimmy'].includes(savedUser)) {
+  if (savedUser && USERS[savedUser] && savedUser !== 'system') {
     currentUser = savedUser;
-    userSelect.value = savedUser;
   } else if (savedUser) {
     // Clean up legacy/invalid values (e.g. 'unknown')
     localStorage.removeItem('kanban-user');
   }
-  
+  userSelect.value = currentUser;
+
   // Event listeners
   userSelect.addEventListener('change', (e) => {
-    currentUser = e.target.value;
+    const nextUser = e.target.value;
+    if (!nextUser) {
+      // Prevent empty current user (used for createdBy, moves, etc.)
+      e.target.value = currentUser;
+      return;
+    }
+    currentUser = nextUser;
     localStorage.setItem('kanban-user', currentUser);
   });
   
