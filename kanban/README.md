@@ -30,10 +30,13 @@ A clean, minimal kanban board for Kenny & Jimmy.
 
 ### UI/UX
 - **Dark mode** — Linear-inspired design
+- **Drag and drop** — Purple box placeholder shows drop position, auto-scroll near edges
 - **Deep linking** — ?task=item-123 opens modal
 - **Mobile responsive**
 - **Auto-refresh** — every 10 seconds
-- **Keyboard shortcuts** — n (new), Escape (close), Cmd+Enter (submit)
+- **Keyboard shortcuts** — n (new), j/k (navigate), Escape (close), Cmd+Enter (submit)
+- **Undo** — Ctrl+Z to undo moves and deletes
+
 
 ## Tech Stack
 

@@ -104,6 +104,8 @@ Enhance the kanban board with assignment, ownership, and notification features t
 - [x] Scroll preservation on refresh
 - [x] Custom confirm modal for deletes
 - [x] Drop animation when moving cards
+- [x] Purple box placeholder (same size as card) during drag
+- [x] Auto-scroll when dragging near column edges
 
 ---
 
@@ -118,4 +120,4 @@ Enhance the kanban board with assignment, ownership, and notification features t
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-01-28*
