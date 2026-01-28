@@ -387,20 +387,6 @@ app.post('/api/items', (req, res) => {
   if (normalizedAssignee !== undefined && !allowedAssignees.has(normalizedAssignee)) {
     errors.push('assignee must be empty or one of: kenny, jimmy, dev, qa');
   }
-  // createdBy: require from body or fall back to a simple per-request user header
-  // (No full auth/session here; the UI should send createdBy explicitly.)
-  const allowedCreators = new Set(['kenny', 'jimmy', 'dev', 'qa']);
-  const createdByRaw = (
-    ('createdBy' in req.body) ? req.body.createdBy :
-    (req.headers['x-user'] || req.headers['x-user-id'] || req.headers['x-created-by'])
-  );
-  const normalizedCreatedBy = (createdByRaw == null) ? '' : String(createdByRaw).trim();
-  if (!normalizedCreatedBy) {
-    errors.push('createdBy is required');
-  } else if (!allowedCreators.has(normalizedCreatedBy)) {
-    errors.push('createdBy must be one of: kenny, jimmy, dev, qa');
-  }
-
 
   if (errors.length) {
     return res.status(400).json({
@@ -415,7 +401,7 @@ app.post('/api/items', (req, res) => {
       data.nextTicketNumber = (data.nextTicketNumber || 1);
       const ticketNumber = data.nextTicketNumber++;
 
-      const createdBy = normalizedCreatedBy;
+      const createdBy = req.body.createdBy || 'unknown';
       const newItem = {
         id: uniqueId('item'),
         number: ticketNumber,
@@ -846,4 +832,4 @@ app.delete('/api/notifications', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Kanban server running on http://0.0.0.0:${PORT}`);
-      const createdBy = normalizedCreatedBy;
+});

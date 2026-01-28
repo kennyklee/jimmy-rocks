@@ -115,8 +115,6 @@ async function performUndo() {
 
 // Central user reference
 const USERS = {
-  dev: { id: 'dev', name: 'Dev' },
-  qa: { id: 'qa', name: 'QA' },
   kenny: { id: 'kenny', name: 'Kenny' },
   jimmy: { id: 'jimmy', name: 'Jimmy' },
   system: { id: 'system', name: 'System' }
@@ -279,7 +277,7 @@ const api = {
     return apiCall('/api/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, createdBy: data?.createdBy || currentUser })
+      body: JSON.stringify(data)
     }, 'Create task');
   },
   
