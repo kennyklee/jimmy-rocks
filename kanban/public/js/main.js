@@ -530,6 +530,9 @@ async function init() {
   
   // Poll for updates every 10 seconds
   setInterval(async () => {
+    // Skip refresh if recent drag-drop (prevents double flash)
+    if (window.lastKanbanMove && Date.now() - window.lastKanbanMove < 3000) return;
+
     const wasSelected = selectedItem?.id;
     await refreshBoard();
     

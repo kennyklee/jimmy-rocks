@@ -86,6 +86,9 @@ export function setupDragAndDrop() {
           }
         }
 
+        // Signal recent move to prevent auto-refresh flash
+        window.lastKanbanMove = Date.now();
+
         // API call in background - only refresh on error (rollback)
         api.moveItem(itemId, toColumnId, newIndex, currentUser).catch(() => {
           refreshBoard();
