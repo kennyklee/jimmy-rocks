@@ -6,22 +6,32 @@ let showArchivedDone = false; // Show tasks in Done older than 7 days
 let undoStack = []; // Stack of undoable actions
 
 // Theme handling
+const themeOrder = ['dark', 'light', 'system'];
+const themeIcons = { dark: '🌙', light: '☀️', system: '💻' };
+
 function initTheme() {
   const saved = localStorage.getItem('theme') || 'dark';
   setTheme(saved);
-  const select = document.getElementById('theme-select');
-  if (select) {
-    select.value = saved;
-    select.addEventListener('change', (e) => setTheme(e.target.value));
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.addEventListener('click', cycleTheme);
   }
+}
+
+function cycleTheme() {
+  const current = localStorage.getItem('theme') || 'dark';
+  const idx = themeOrder.indexOf(current);
+  const next = themeOrder[(idx + 1) % themeOrder.length];
+  setTheme(next);
 }
 
 function setTheme(theme) {
   localStorage.setItem('theme', theme);
-  if (theme === 'system') {
-    document.documentElement.setAttribute('data-theme', 'system');
-  } else {
-    document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.textContent = themeIcons[theme];
+    btn.title = theme.charAt(0).toUpperCase() + theme.slice(1) + ' mode';
   }
 }
 
