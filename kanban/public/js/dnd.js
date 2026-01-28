@@ -1,0 +1,92 @@
+// dnd.js - Drag and drop handlers using SortableJS
+
+import { currentUser, boardData } from './state.js';
+import { api, refreshBoard } from './api.js';
+import { pushUndo } from './undo.js';
+
+// SortableJS instances
+let sortableInstances = [];
+
+// Will be set by main.js
+let openItemDetailFn = null;
+
+export function setDndDependencies(deps) {
+  openItemDetailFn = deps.openItemDetail;
+}
+
+export function setupDragAndDrop() {
+  // Clean up previous instances
+  sortableInstances.forEach(s => s.destroy());
+  sortableInstances = [];
+  
+  // Add click handlers to items
+  document.querySelectorAll('.item').forEach(item => {
+    item.addEventListener('click', handleItemClick);
+  });
+  
+  // Initialize SortableJS on each column
+  document.querySelectorAll('.column-items').forEach(column => {
+    const sortable = new Sortable(column, {
+      group: 'kanban',
+      scroll: true,
+      scrollSensitivity: 150,
+      scrollSpeed: 15,
+      bubbleScroll: true,
+      forceAutoScrollFallback: true,
+      animation: 150,
+      ghostClass: 'dragging',
+      delay: 150,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
+      
+      onStart: function(evt) {
+        evt.item.classList.add('dragging');
+      },
+      
+      onEnd: async function(evt) {
+        evt.item.classList.remove('dragging');
+        
+        // Add drop animation
+        evt.item.classList.add('just-dropped');
+        evt.item.addEventListener('animationend', () => {
+          evt.item.classList.remove('just-dropped');
+        }, { once: true });
+        
+        const itemId = evt.item.dataset.itemId;
+        const fromColumnId = evt.from.dataset.columnId;
+        const toColumnId = evt.to.dataset.columnId;
+        const newIndex = evt.newIndex;
+        
+        // Find original position for undo
+        let fromPosition = evt.oldIndex;
+        
+        // Store undo data
+        if (fromColumnId !== toColumnId || fromPosition !== newIndex) {
+          pushUndo({ type: 'move', itemId, fromColumn: fromColumnId, fromPosition });
+        }
+        
+        // Call API to persist the move
+        try {
+          await api.moveItem(itemId, toColumnId, newIndex, currentUser);
+          await refreshBoard();
+        } catch (err) {
+          await refreshBoard();
+        }
+      }
+    });
+    
+    sortableInstances.push(sortable);
+  });
+}
+
+function handleItemClick(e) {
+  const itemId = e.currentTarget.dataset.itemId;
+  
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === itemId);
+    if (item) {
+      if (openItemDetailFn) openItemDetailFn(item);
+      break;
+    }
+  }
+}
