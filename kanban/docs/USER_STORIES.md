@@ -9,11 +9,11 @@
 **So that** there's clear ownership of who's responsible
 
 **Acceptance Criteria:**
-- [ ] Task detail modal has an "Assignee" dropdown
-- [ ] Options: Unassigned, Kenny, Jimmy
-- [ ] Selecting a new assignee saves immediately
-- [ ] Task card shows assignee initial/avatar
-- [ ] Unassigned tasks show no assignee indicator
+- [x] Task detail modal has an "Assignee" dropdown
+- [x] Options: Unassigned, Kenny, Jimmy
+- [x] Selecting a new assignee saves immediately
+- [x] Task card shows assignee initial/avatar
+- [x] Unassigned tasks show no assignee indicator
 
 ---
 
@@ -24,10 +24,10 @@
 **So that** I know who to ask for clarification
 
 **Acceptance Criteria:**
-- [ ] New tasks automatically set `createdBy` to current user
-- [ ] Creator shown in task detail modal (read-only)
-- [ ] Creator cannot be changed after creation
-- [ ] Existing tasks without creator show "unknown"
+- [x] New tasks automatically set `createdBy` to current user
+- [x] Creator shown in task detail modal (read-only)
+- [x] Creator cannot be changed after creation
+- [x] Existing tasks without creator show "unknown"
 
 ---
 
@@ -40,11 +40,11 @@
 **So that** it's clear what's waiting on whom
 
 **Acceptance Criteria:**
-- [ ] Task detail modal has "Blocked by" dropdown
-- [ ] Options: None, Kenny, Jimmy
-- [ ] Blocked tasks show visual indicator on card
-- [ ] Can be blocked AND assigned (independent fields)
-- [ ] Clearing blocked status removes indicator
+- [x] Task detail modal has "Blocked by" dropdown
+- [x] Options: None, Kenny, Jimmy
+- [x] Blocked tasks show visual indicator on card
+- [x] Can be blocked AND assigned (independent fields)
+- [x] Clearing blocked status removes indicator
 
 ---
 
@@ -57,10 +57,10 @@
 **So that** there's a history of ownership
 
 **Acceptance Criteria:**
-- [ ] When assignee changes, system comment added
-- [ ] Comment format: "Assigned to {name}" or "Unassigned"
-- [ ] System comments show author as "system"
-- [ ] System comments visually distinct (different color/style)
+- [x] When assignee changes, system comment added
+- [x] Comment format: "Assigned to {name}" or "Unassigned"
+- [x] System comments show author as "system"
+- [x] System comments visually distinct (different color/style)
 
 ---
 
@@ -71,9 +71,9 @@
 **So that** I can see when something was blocked/unblocked
 
 **Acceptance Criteria:**
-- [ ] When blocked status changes, system comment added
-- [ ] Comment format: "Blocked by {name}" or "Unblocked"
-- [ ] System comments styled consistently with US-4
+- [x] When blocked status changes, system comment added
+- [x] Comment format: "Blocked by {name}" or "Unblocked"
+- [x] System comments styled consistently with US-4
 
 ---
 
@@ -84,9 +84,9 @@
 **So that** there's a record of who finished it
 
 **Acceptance Criteria:**
-- [ ] When task moves to Done column, system comment added
-- [ ] Comment format: "Completed by {name}"
-- [ ] Only triggers when moving TO Done (not from Done)
+- [x] When task moves to Done column, system comment added
+- [x] Comment format: "Completed by {name}"
+- [x] Only triggers when moving TO Done (not from Done)
 
 ---
 
@@ -99,10 +99,10 @@
 **So that** I know when I have new work
 
 **Acceptance Criteria:**
-- [ ] When task assigned to Kenny, Telegram message sent
-- [ ] Message includes task title
-- [ ] Message includes deep link to task
-- [ ] No notification for self-assignment (Kenny assigns to Kenny)
+- [x] When task assigned to Kenny, Telegram message sent
+- [x] Message includes task title
+- [x] Message includes deep link to task
+- [x] No notification for self-assignment (Kenny assigns to Kenny)
 
 ---
 
@@ -113,9 +113,9 @@
 **So that** I know someone's waiting
 
 **Acceptance Criteria:**
-- [ ] When task marked blocked by Kenny, Telegram message sent
-- [ ] Message includes task title and link
-- [ ] Distinct from assignment notification
+- [x] When task marked blocked by Kenny, Telegram message sent
+- [x] Message includes task title and link
+- [x] Distinct from assignment notification
 
 ---
 
@@ -126,9 +126,9 @@
 **So that** I know work is done
 
 **Acceptance Criteria:**
-- [ ] When Jimmy moves task to Done, Telegram message sent
-- [ ] Message includes task title
-- [ ] Only for tasks Jimmy completes (not Kenny)
+- [x] When Jimmy moves task to Done, Telegram message sent
+- [x] Message includes task title
+- [x] Only for tasks Jimmy completes (not Kenny)
 
 ---
 
@@ -141,13 +141,13 @@
 **So that** I start each day knowing my priorities
 
 **Acceptance Criteria:**
-- [ ] Message sent daily at configured time (default 8am PT)
-- [ ] Lists tasks assigned to Kenny
-- [ ] Lists tasks blocked by Kenny
-- [ ] Lists tasks Jimmy completed yesterday
-- [ ] Each task includes deep link
-- [ ] Skips sections if empty
-- [ ] No message if nothing to report
+- [x] Message sent daily at configured time (default 8am PT)
+- [x] Lists tasks assigned to Kenny
+- [x] Lists tasks blocked by Kenny
+- [x] Lists tasks Jimmy completed yesterday
+- [x] Each task includes deep link
+- [x] Skips sections if empty
+- [x] No message if nothing to report
 
 ---
 
@@ -158,10 +158,10 @@
 **So that** it fits my schedule
 
 **Acceptance Criteria:**
-- [ ] Standup time configurable via environment variable or API
-- [ ] Supports 24h format (HH:MM)
-- [ ] Timezone configurable (default America/Los_Angeles)
-- [ ] Changes take effect next day
+- [x] Standup time configurable via environment variable or API
+- [x] Supports 24h format (HH:MM)
+- [x] Timezone configurable (default America/Los_Angeles)
+- [x] Changes take effect next day
 
 ---
 
@@ -174,9 +174,9 @@
 **So that** I know he's working on it
 
 **Acceptance Criteria:**
-- [ ] When task assigned to Jimmy, auto-comment added
-- [ ] Comment: "On it" (from Jimmy, not system)
-- [ ] Jimmy begins working on task (external behavior)
+- [x] When task assigned to Jimmy, auto-comment added
+- [x] Comment: "On it" (from Jimmy, not system)
+- [x] Jimmy begins working on task (external behavior)
 
 ---
 
@@ -189,10 +189,10 @@
 **So that** Telegram links take me directly there
 
 **Acceptance Criteria:**
-- [ ] URL format: `?task={id}`
-- [ ] Page loads with task detail modal open
-- [ ] Invalid task ID shows error or ignores parameter
-- [ ] Works on mobile browsers
+- [x] URL format: `?task={id}`
+- [x] Page loads with task detail modal open
+- [x] Invalid task ID shows error or ignores parameter
+- [x] Works on mobile browsers
 
 ---
 
@@ -209,4 +209,38 @@
 
 ---
 
-*Last updated: 2026-01-27*
+
+
+---
+
+## Epic: Drag and Drop UX
+
+### US-14: Visual drop placeholder
+
+**As** a user  
+**I want** to see exactly where a card will land when dragging  
+**So that** I can precisely position tasks
+
+**Acceptance Criteria:**
+- [x] Purple box placeholder appears at drop position
+- [x] Placeholder is same size as dragged card
+- [x] Cards above/below reflow around placeholder
+- [x] No janky line indicators
+
+---
+
+### US-15: Auto-scroll while dragging
+
+**As** a user  
+**I want** the column to scroll when I drag near the edge  
+**So that** I can move cards to positions not currently visible
+
+**Acceptance Criteria:**
+- [x] Dragging near top edge scrolls column up
+- [x] Dragging near bottom edge scrolls column down
+- [x] Scroll sensitivity: 150px from edge
+- [x] Works on both desktop and mobile
+
+---
+
+*Last updated: 2026-01-28*
