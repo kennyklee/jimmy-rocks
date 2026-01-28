@@ -16,7 +16,9 @@ const DATA_FILE = path.join(__dirname, 'data', 'board.json');
 // Central user reference
 const USERS = {
   kenny: { id: 'kenny', name: 'Kenny' },
-  jimmy: { id: 'jimmy', name: 'Jimmy' }
+  jimmy: { id: 'jimmy', name: 'Jimmy' },
+  dev: { id: 'dev', name: 'Dev' },
+  qa: { id: 'qa', name: 'QA' }
 };
 
 function getUserName(userId) {
@@ -354,6 +356,45 @@ app.post('/api/items', (req, res) => {
   const { title, description, priority, columnId } = req.body;
   const targetColumnId = columnId || 'todo';
 
+  // -----------------------------
+  // Input validation
+  // -----------------------------
+  const errors = [];
+
+  const normalizedTitle = (typeof title === 'string') ? title.trim() : '';
+  if (!normalizedTitle) {
+    errors.push('title is required');
+  } else if (normalizedTitle.length > 200) {
+    errors.push('title must be at most 200 characters');
+  }
+
+  if (description != null && typeof description !== 'string') {
+    errors.push('description must be a string');
+  } else if (typeof description === 'string' && description.length > 5000) {
+    errors.push('description must be at most 5000 characters');
+  }
+
+  const allowedPriorities = new Set(['low', 'medium', 'high', 'urgent']);
+  if (priority != null && typeof priority !== 'string') {
+    errors.push('priority must be a string');
+  } else if (typeof priority === 'string' && priority && !allowedPriorities.has(priority)) {
+    errors.push('priority must be one of: low, medium, high, urgent');
+  }
+
+  const allowedAssignees = new Set(['', 'kenny', 'jimmy', 'dev', 'qa']);
+  const assigneeRaw = ('assignee' in req.body) ? req.body.assignee : undefined;
+  const normalizedAssignee = (assigneeRaw == null) ? undefined : String(assigneeRaw).trim();
+  if (normalizedAssignee !== undefined && !allowedAssignees.has(normalizedAssignee)) {
+    errors.push('assignee must be empty or one of: kenny, jimmy, dev, qa');
+  }
+
+  if (errors.length) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: errors
+    });
+  }
+
   try {
     const { newItem } = updateData(data => {
       // Auto-increment ticket number
@@ -364,10 +405,10 @@ app.post('/api/items', (req, res) => {
       const newItem = {
         id: uniqueId('item'),
         number: ticketNumber,
-        title,
+        title: normalizedTitle,
         description: description || '',
         priority: priority || 'medium',
-        assignee: req.body.assignee || 'jimmy',
+        assignee: ('assignee' in req.body) ? (normalizedAssignee ?? '') : 'jimmy',
         createdAt: new Date().toISOString(),
         createdBy: createdBy,
         comments: [
