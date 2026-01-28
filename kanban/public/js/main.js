@@ -605,7 +605,7 @@ async function init() {
     a.download = 'kanban-backup-' + new Date().toISOString().split('T')[0] + '.json';
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Board exported!');
+    showToast('success', 'Exported', 'Board backup downloaded');
   });
 
   importBtn.addEventListener('click', () => {
@@ -631,10 +631,10 @@ async function init() {
     });
 
     if (response.ok) {
-      showToast('Board imported!');
+      showToast('success', 'Imported', 'Board restored from backup');
       await refreshBoard();
     } else {
-      showToast('Import failed', 'error');
+      showToast('error', 'Import Failed', 'Check file format');
     }
     e.target.value = '';
   });
