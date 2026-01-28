@@ -1,0 +1,9 @@
+# dependencies
+node_modules/
+
+# runtime data
+*.log
+.DS_Store
+
+# kanban local data (if any)
+kanban/data/

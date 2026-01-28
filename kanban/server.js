@@ -9,6 +9,14 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
+const {
+  validate,
+  createItemValidation,
+  updateItemValidation,
+  addCommentValidation,
+  moveItemValidation
+} = require('./middleware/validation');
+
 const app = express();
 const PORT = process.env.PORT || 3333;
 const DATA_FILE = path.join(__dirname, 'data', 'board.json');
@@ -262,7 +270,7 @@ app.get('/api/metrics', (req, res) => {
 });
 
 // Create new item
-app.post('/api/items', (req, res) => {
+app.post('/api/items', validate(createItemValidation), (req, res) => {
   const { title, description, priority, columnId, tags } = req.body;
   const data = readData();
   const targetColumnId = columnId || 'todo';
@@ -330,7 +338,7 @@ app.post('/api/items', (req, res) => {
 });
 
 // Update item
-app.put('/api/items/:id', (req, res) => {
+app.put('/api/items/:id', validate(updateItemValidation), (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   const data = readData();
@@ -404,7 +412,7 @@ app.put('/api/items/:id', (req, res) => {
 });
 
 // Move item to different column
-app.post('/api/items/:id/move', (req, res) => {
+app.post('/api/items/:id/move', validate(moveItemValidation), (req, res) => {
   const { id } = req.params;
   const { toColumnId, position, movedBy } = req.body;
   const data = readData();
@@ -504,7 +512,7 @@ app.delete('/api/items/:id', (req, res) => {
 });
 
 // Add comment to item
-app.post('/api/items/:id/comments', (req, res) => {
+app.post('/api/items/:id/comments', validate(addCommentValidation), (req, res) => {
   const { id } = req.params;
   const { text, author } = req.body;
   const data = readData();
