@@ -575,62 +575,6 @@ function closeItemDetailModal() {
 // Drag and Drop
 // SortableJS instances and drop indicator
 let sortableInstances = [];
-let dropIndicator = null;
-
-function ensureDropIndicator() {
-  if (!dropIndicator) {
-    dropIndicator = document.createElement('div');
-    dropIndicator.className = 'drop-indicator';
-    document.body.appendChild(dropIndicator);
-  }
-  return dropIndicator;
-}
-
-function positionDropIndicator(column, y) {
-  const indicator = ensureDropIndicator();
-  const columnRect = column.getBoundingClientRect();
-  const items = [...column.querySelectorAll('.item:not(.sortable-drag)')];
-  
-  let indicatorY;
-  
-  // Find where to position the indicator
-  let afterElement = null;
-  for (const item of items) {
-    const box = item.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0) {
-      afterElement = item;
-      break;
-    }
-  }
-  
-  if (afterElement) {
-    const rect = afterElement.getBoundingClientRect();
-    indicatorY = rect.top - 4;
-  } else if (items.length > 0) {
-    const lastItem = items[items.length - 1];
-    const rect = lastItem.getBoundingClientRect();
-    indicatorY = rect.bottom + 4;
-  } else {
-    indicatorY = columnRect.top + 8;
-  }
-  
-  indicator.style.display = 'block';
-  indicator.style.top = indicatorY + 'px';
-  indicator.style.left = (columnRect.left + 8) + 'px';
-  indicator.style.width = (columnRect.width - 16) + 'px';
-}
-
-function hideDropIndicator() {
-  if (dropIndicator) {
-    dropIndicator.style.display = 'none';
-  }
-}
-
-// Safety net: hide drop indicator on any touch/mouse end
-document.addEventListener('touchend', () => setTimeout(hideDropIndicator, 100), { passive: true });
-document.addEventListener('touchcancel', hideDropIndicator, { passive: true });
-document.addEventListener('mouseup', () => setTimeout(hideDropIndicator, 100));
 
 function setupDragAndDrop() {
   // Clean up previous instances
@@ -661,21 +605,8 @@ function setupDragAndDrop() {
         evt.item.classList.add('dragging');
       },
       
-      onMove: function(evt) {
-        // Position drop indicator
-        const y = evt.originalEvent?.touches?.[0]?.clientY || evt.originalEvent?.clientY || 0;
-        if (y) positionDropIndicator(evt.to, y);
-      },
-      
-      onUnchoose: function(evt) {
-        // Hide indicator when drag is cancelled
-        hideDropIndicator();
-        evt.item.classList.remove('dragging');
-      },
-      
       onEnd: async function(evt) {
         evt.item.classList.remove('dragging');
-        hideDropIndicator();
         
         // Add drop animation
         evt.item.classList.add('just-dropped');

@@ -591,40 +591,6 @@ form {
   opacity: 0.5;
 }
 
-/* Drop indicator - purple line with dots */
-.drop-indicator { display:none !important; } .drop-placeholder {
-  position: fixed;
-  height: 4px;
-  background: #a78bfa;
-  border-radius: 4px;
-  z-index: 9999;
-  pointer-events: none;
-  display: none;
-  box-shadow: 0 0 8px #a78bfa, 0 0 16px #a78bfa;
-}
-
-.drop-indicator::before,
-.drop-indicator::after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #a78bfa;
-  border-radius: 50%;
-  top: 50%;
-  transform: translateY(-50%);
-  box-shadow: 0 0 8px #a78bfa;
-}
-
-.drop-indicator::before {
-  left: -6px;
-}
-
-.drop-indicator::after {
-  right: -6px;
-}
-
-/* Card drop animation */
 @keyframes cardDropped {
   0% {
     transform: scale(1.03);
@@ -680,7 +646,6 @@ form {
 }
 
 /* Drop indicator for reordering */
-.drop-indicator-old {
   height: 3px;
   background: var(--accent);
   border-radius: 2px;
@@ -871,7 +836,6 @@ form {
 }
 
 /* Drop indicator line */
-.drop-indicator { display:none !important; } .drop-placeholder {
   height: 3px;
   background: var(--accent);
   border-radius: 2px;
@@ -880,8 +844,6 @@ form {
   position: relative;
 }
 
-.drop-indicator::before,
-.drop-indicator::after {
   content: '';
   position: absolute;
   width: 8px;
@@ -892,40 +854,32 @@ form {
   transform: translateY(-50%);
 }
 
-.drop-indicator::before {
   left: -4px;
 }
 
-.drop-indicator::after {
   right: -4px;
 }
 
 /* Drop indicator - more visible */
-.drop-indicator { display:none !important; } .drop-placeholder {
   height: 4px !important;
   background: #a78bfa !important;
   margin: 8px 0 !important;
   box-shadow: 0 0 12px #a78bfa, 0 0 20px #a78bfa !important;
 }
 
-.drop-indicator::before,
-.drop-indicator::after {
   width: 12px !important;
   height: 12px !important;
   background: #a78bfa !important;
   box-shadow: 0 0 8px #a78bfa !important;
 }
 
-.drop-indicator::before {
   left: -6px !important;
 }
 
-.drop-indicator::after {
   right: -6px !important;
 }
 
 /* Ensure drop indicator is above cards */
-.drop-indicator { display:none !important; } .drop-placeholder {
   position: relative !important;
   z-index: 100 !important;
 }
@@ -962,7 +916,6 @@ form {
 }
 
 /* Absolutely positioned drop indicator */
-.drop-indicator { display:none !important; } .drop-placeholder {
   position: fixed !important;
   height: 4px !important;
   background: #a78bfa !important;
@@ -1563,9 +1516,6 @@ form {
 }
 
 /* OVERRIDE: Purple box placeholder instead of line */
-.drop-indicator {
-  display: none !important;
-}
 
 .item.dragging {
   opacity: 1 !important;
