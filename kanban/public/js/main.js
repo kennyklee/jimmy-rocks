@@ -593,6 +593,51 @@ async function init() {
     }
   });
   commentForm.addEventListener('submit', handleCommentSubmit);
+
+  // Export/Import handlers
+  exportBtn.addEventListener('click', async () => {
+    const response = await fetch('/api/export');
+    const data = await response.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kanban-backup-' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Board exported!');
+  });
+
+  importBtn.addEventListener('click', () => {
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!confirm('This will replace all current data. Continue?')) {
+      e.target.value = '';
+      return;
+    }
+
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    const response = await fetch('/api/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      showToast('Board imported!');
+      await refreshBoard();
+    } else {
+      showToast('Import failed', 'error');
+    }
+    e.target.value = '';
+  });
   
   const subtaskForm = document.getElementById('subtask-form');
   subtaskForm.addEventListener('submit', handleAddSubtask);
