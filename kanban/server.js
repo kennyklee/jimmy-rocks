@@ -554,7 +554,12 @@ app.post('/api/items/:id/move', (req, res) => {
       if (typeof position === 'number') {
         toColumn.items.splice(position, 0, item);
       } else {
-        toColumn.items.push(item);
+        // Done column: newest at top; others: append to bottom
+        if (toColumnId === 'done') {
+          toColumn.items.unshift(item);
+        } else {
+          toColumn.items.push(item);
+        }
       }
 
       return { item, fromColumnId: fromColumn.id };
