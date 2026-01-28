@@ -971,9 +971,12 @@ async function init() {
   
   // Load user preference
   const savedUser = localStorage.getItem('kanban-user');
-  if (savedUser) {
+  if (savedUser && ['kenny', 'jimmy'].includes(savedUser)) {
     currentUser = savedUser;
     userSelect.value = savedUser;
+  } else if (savedUser) {
+    // Clean up legacy/invalid values (e.g. 'unknown')
+    localStorage.removeItem('kanban-user');
   }
   
   // Event listeners

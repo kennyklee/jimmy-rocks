@@ -256,7 +256,23 @@ app.post('/api/items', (req, res) => {
   data.nextTicketNumber = (data.nextTicketNumber || 1);
   const ticketNumber = data.nextTicketNumber++;
   
-  const createdBy = req.body.createdBy || 'unknown';
+  // Resolve creator from body or headers; tolerate legacy/buggy clients sending 'unknown'
+  const createdByRaw = (
+    req.body.createdBy ||
+    req.headers['x-user'] ||
+    req.headers['x-user-id'] ||
+    req.headers['x-created-by'] ||
+    ''
+  );
+
+  const createdByNormalized = String(createdByRaw).trim().toLowerCase();
+  const createdBy = ['', 'unknown', 'null', 'undefined'].includes(createdByNormalized)
+    ? ''
+    : createdByNormalized;
+
+  // API: require createdBy if provided context is missing; otherwise default to jimmy
+  // (We don't have real auth yet, so this is the safest sensible default.)
+  const finalCreatedBy = createdBy || 'jimmy';
   const newItem = {
     id: uniqueId('item'),
     number: ticketNumber,
@@ -265,11 +281,11 @@ app.post('/api/items', (req, res) => {
     priority: priority || 'medium',
     assignee: req.body.assignee || 'jimmy',
     createdAt: new Date().toISOString(),
-    createdBy: createdBy,
+    createdBy: finalCreatedBy,
     comments: [
       {
         id: uniqueId('comment-created'),
-        text: `Created by ${getUserName(createdBy)}`,
+        text: `Created by ${getUserName(finalCreatedBy)}`,
         author: 'system',
         createdAt: new Date().toISOString()
       }
