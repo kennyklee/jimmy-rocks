@@ -50,6 +50,10 @@ const priorityField = body('priority')
   .optional({ nullable: true })
   .isIn(VALID_PRIORITIES).withMessage(`priority must be one of: ${VALID_PRIORITIES.join(', ')}`);
 
+const dueDateField = body('dueDate')
+  .optional({ nullable: true, checkFalsy: true })
+  .isISO8601().withMessage('dueDate must be a valid date');
+
 const assigneeField = body('assignee')
   .optional({ nullable: true })
   .customSanitizer(v => (v == null ? v : String(v).trim().toLowerCase()))
@@ -129,6 +133,7 @@ const createItemValidation = [
   titleField,
   descriptionField,
   priorityField,
+  dueDateField,
   assigneeField,
   createdByField,
   columnIdField,
@@ -145,6 +150,7 @@ const updateItemValidation = [
     .escape(),
   descriptionField,
   priorityField,
+  dueDateField,
   assigneeField,
   blockedByField,
   createdByField,

@@ -10,6 +10,33 @@ export function setRenderDependencies(deps) {
   setupDragAndDropFn = deps.setupDragAndDrop;
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function normalizeDateOnly(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getDueStatus(dueDate) {
+  const due = normalizeDateOnly(dueDate);
+  if (!due) return null;
+  const today = normalizeDateOnly(new Date());
+  const diffDays = Math.floor((due - today) / MS_PER_DAY);
+
+  if (diffDays < 0) return "overdue";
+  if (diffDays === 0) return "due-today";
+  if (diffDays <= 2) return "due-soon";
+  return null;
+}
+
+function formatDueDate(dueDate) {
+  const date = new Date(dueDate);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
+}
+
 export function renderBoard() {
   const board = document.getElementById('board');
   const ARCHIVE_DAYS = 1;
@@ -77,16 +104,20 @@ window.toggleArchived = toggleArchived;
 export function renderItem(item) {
   const priorityClass = `priority-${item.priority}`;
   const commentCount = item.comments?.length || 0;
-  const assigneeInitial = item.assignee ? item.assignee[0].toUpperCase() : '?';
-  const assigneeClass = item.assignee || 'unassigned';
-  const isBlocked = item.tags && item.tags.includes('blocked');
-  const blockedClass = isBlocked ? 'blocked' : '';
-  const blockedBadge = isBlocked ? `<span class="blocked-badge" title="Blocked">🚧</span>` : '';
+  const assigneeInitial = item.assignee ? item.assignee[0].toUpperCase() : "?";
+  const assigneeClass = item.assignee || "unassigned";
+  const isBlocked = item.tags && item.tags.includes("blocked");
+  const blockedClass = isBlocked ? "blocked" : "";
+  const blockedBadge = isBlocked ? `<span class="blocked-badge" title="Blocked">🚧</span>` : "";
   const tagsHtml = (item.tags && item.tags.length > 0) 
-    ? `<div class="item-tags">${item.tags.map(t => `<span class="tag tag-${t.split('/')[0]}">${t}</span>`).join('')}</div>` 
-    : '';
+    ? `<div class="item-tags">${item.tags.map(t => `<span class="tag tag-${t.split("/")[0]}">${t}</span>`).join("")}</div>` 
+    : "";
   
-  const ticketNum = item.number ? `#${item.number}` : '';
+  const ticketNum = item.number ? `#${item.number}` : "";
+  const dueStatus = getDueStatus(item.dueDate);
+  const dueDateLabel = item.dueDate ? formatDueDate(item.dueDate) : "";
+  const dueDateHtml = dueDateLabel ? `<span class="due-date ${dueStatus || ""}" title="Due ${dueDateLabel}">📅 ${dueDateLabel}</span>` : "";
+  const itemClasses = ["item", blockedClass, dueStatus].filter(Boolean).join(" ");
   
   // Subtask progress
   const subtasks = item.subtasks || [];
@@ -98,23 +129,26 @@ export function renderItem(item) {
          <span class="progress-bar"><span class="progress-fill" style="width: ${subtaskPct}%"></span></span>
          ${subtaskCompleted}/${subtaskTotal}
        </span>` 
-    : '';
+    : "";
   
   return `
-    <div class="item ${blockedClass}" data-item-id="${item.id}">
+    <div class="${itemClasses}" data-item-id="${item.id}">
       <div class="item-header">
         <span class="item-title">${escapeHtml(item.title)}</span>
         ${blockedBadge}
         <span class="ticket-number">${ticketNum}</span>
       </div>
       ${tagsHtml}
-      ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ''}
+      ${item.description ? `<div class="item-description">${escapeHtml(item.description)}</div>` : ""}
       <div class="item-footer">
-        <span class="priority-badge ${priorityClass}">${item.priority}</span>
-        ${subtaskHtml}
+        <div class="item-footer-left">
+          <span class="priority-badge ${priorityClass}">${item.priority}</span>
+          ${dueDateHtml}
+          ${subtaskHtml}
+        </div>
         <span class="item-footer-right">
-          ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ''}
-          <span class="assignee-badge ${assigneeClass}" title="${item.assignee || 'Unassigned'}">${assigneeInitial}</span>
+          ${commentCount > 0 ? `<span class="item-comments">💬 ${commentCount}</span>` : ""}
+          <span class="assignee-badge ${assigneeClass}" title="${item.assignee || "Unassigned"}">${assigneeInitial}</span>
         </span>
       </div>
     </div>

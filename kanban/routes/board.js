@@ -14,10 +14,11 @@ const {
   moveItemValidation
 } = require('../middleware/validation');
 
-const { getUserName } = require('../lib/constants');
+const { getUserName, COLUMNS } = require('../lib/constants');
 const {
   uniqueId,
   readData,
+  backupCurrentData,
   writeData,
   normalizeTags,
   calculateStageTime,
@@ -25,6 +26,138 @@ const {
 } = require('../lib/data');
 const { addNotification } = require('../lib/notifications');
 const { addEvent, EventTypes } = require('../lib/events');
+
+const VALID_COLUMN_IDS = new Set(COLUMNS.map(col => col.id));
+
+function escapeCsv(value) {
+  if (value == null) return '';
+  const str = String(value);
+  if (/[",\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function buildItemsCsv(data) {
+  const header = [
+    'columnId',
+    'columnTitle',
+    'number',
+    'id',
+    'title',
+    'description',
+    'priority',
+    'assignee',
+    'blockedBy',
+    'tags',
+    'createdBy',
+    'createdAt',
+    'commentsCount',
+    'subtasksCount'
+  ];
+
+  const rows = [header.map(escapeCsv).join(',')];
+
+  for (const column of data.columns || []) {
+    for (const item of column.items || []) {
+      const row = [
+        column.id || '',
+        column.title || '',
+        item.number || '',
+        item.id || '',
+        item.title || '',
+        item.description || '',
+        item.priority || '',
+        item.assignee || '',
+        item.blockedBy || '',
+        Array.isArray(item.tags) ? item.tags.join('|') : '',
+        item.createdBy || '',
+        item.createdAt || '',
+        Array.isArray(item.comments) ? item.comments.length : 0,
+        Array.isArray(item.subtasks) ? item.subtasks.length : 0
+      ];
+      rows.push(row.map(escapeCsv).join(','));
+    }
+  }
+
+  return rows.join('\n');
+}
+
+function normalizeImportedData(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw AppError.badRequest('Invalid import payload');
+  }
+
+  if (!Array.isArray(payload.columns)) {
+    throw AppError.badRequest('Invalid import payload: columns must be an array');
+  }
+
+  const columnMap = new Map();
+  for (const column of payload.columns) {
+    if (!column || typeof column !== 'object') {
+      throw AppError.badRequest('Invalid import payload: column must be an object');
+    }
+    if (!VALID_COLUMN_IDS.has(column.id)) {
+      throw AppError.badRequest(`Invalid column id: ${column.id}`);
+    }
+    if (!Array.isArray(column.items)) {
+      throw AppError.badRequest(`Invalid items for column: ${column.id}`);
+    }
+    if (columnMap.has(column.id)) {
+      throw AppError.badRequest(`Duplicate column id: ${column.id}`);
+    }
+
+    for (const item of column.items) {
+      if (!item || typeof item !== 'object') {
+        throw AppError.badRequest('Invalid item entry');
+      }
+      if (!item.id || !item.title) {
+        throw AppError.badRequest('Invalid item: missing id or title');
+      }
+      if ('tags' in item) {
+        try {
+          item.tags = normalizeTags(item.tags);
+        } catch (e) {
+          throw AppError.badRequest(e.message || 'Invalid tags');
+        }
+      } else {
+        item.tags = normalizeTags(item.tags);
+      }
+    }
+
+    columnMap.set(column.id, column);
+  }
+
+  const missingColumns = COLUMNS.map(col => col.id).filter(id => !columnMap.has(id));
+  if (missingColumns.length > 0) {
+    throw AppError.badRequest(`Missing columns: ${missingColumns.join(', ')}`);
+  }
+
+  const normalizedColumns = COLUMNS.map(colDef => {
+    const incoming = columnMap.get(colDef.id);
+    return {
+      ...colDef,
+      ...incoming,
+      items: incoming.items || []
+    };
+  });
+
+  const allItems = normalizedColumns.flatMap(col => col.items || []);
+  let nextTicketNumber = payload.nextTicketNumber;
+  if (!Number.isInteger(nextTicketNumber) || nextTicketNumber < 1) {
+    const maxNumber = allItems.reduce((max, item) => {
+      return Number.isInteger(item.number) ? Math.max(max, item.number) : max;
+    }, 0);
+    nextTicketNumber = maxNumber + 1;
+  }
+
+  return {
+    ...payload,
+    columns: normalizedColumns,
+    nextTicketNumber
+  };
+}
+
 
 // Get board state
 router.get('/board', (req, res) => {
@@ -139,9 +272,38 @@ router.get('/metrics', (req, res) => {
   res.json(metrics);
 });
 
+// Export board (JSON or CSV)
+router.get('/export', (req, res) => {
+  const data = readData();
+  const format = String(req.query.format || 'json').toLowerCase();
+
+  if (format === 'csv') {
+    const csv = buildItemsCsv(data);
+    const dateStamp = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="kanban-items-${dateStamp}.csv"`);
+    return res.send(csv);
+  }
+
+  res.json(data);
+});
+
+// Import board (JSON)
+router.post('/import', (req, res) => {
+  const normalized = normalizeImportedData(req.body);
+  const backup = backupCurrentData();
+  writeData(normalized);
+
+  res.json({
+    success: true,
+    backupFile: backup.backupName
+  });
+});
+
 // Create new item
+
 router.post('/items', validate(createItemValidation), (req, res) => {
-  const { title, description, priority, columnId, tags } = req.body;
+  const { title, description, priority, columnId, tags, dueDate } = req.body;
   const data = readData();
   const targetColumnId = columnId || 'todo';
 

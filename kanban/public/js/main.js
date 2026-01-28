@@ -29,9 +29,14 @@ const commentForm = document.getElementById('comment-form');
 const deleteItemBtn = document.getElementById('delete-item-btn');
 const detailMoveColumn = document.getElementById('detail-move-column');
 const detailAssignee = document.getElementById('detail-assignee');
+const detailDueDate = document.getElementById('detail-due-date');
 const itemAssignee = document.getElementById('item-assignee');
 const tagSelect = document.getElementById('tag-select');
 const templateSelect = document.getElementById('item-template');
+const exportBtn = document.getElementById('export-btn');
+const exportCsvBtn = document.getElementById('export-csv-btn');
+const importBtn = document.getElementById('import-btn');
+const importFileInput = document.getElementById('import-file');
 
 // Wire up dependencies between modules
 setRefreshDependencies({
@@ -183,6 +188,7 @@ function openItemDetail(item) {
   
   renderAssigneeOptions(detailAssignee);
   detailAssignee.value = item.assignee || '';
+  if (detailDueDate) detailDueDate.value = formatDateInputValue(item.dueDate);
   
   renderDetailTags(item.tags || []);
   
@@ -261,6 +267,7 @@ async function handleDeleteItem() {
           assignee: itemToDelete.assignee,
           tags: itemToDelete.tags,
           columnId: itemColumn,
+          dueDate: itemToDelete.dueDate || null,
           createdBy: itemToDelete.createdBy
         }
       });
@@ -287,6 +294,23 @@ async function handleMoveColumn(e) {
     const item = col.items.find(i => i.id === selectedItem.id);
     if (item) {
       setSelectedItem(item);
+      break;
+    }
+  }
+}
+
+async function handleDueDateChange(e) {
+  if (!selectedItem) return;
+
+  const dueDate = e.target.value || null;
+  await api.updateItem(selectedItem.id, { dueDate });
+  await refreshBoard();
+
+  for (const col of boardData.columns) {
+    const item = col.items.find(i => i.id === selectedItem.id);
+    if (item) {
+      setSelectedItem(item);
+      if (detailDueDate) detailDueDate.value = formatDateInputValue(item.dueDate);
       break;
     }
   }

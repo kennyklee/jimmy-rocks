@@ -38,6 +38,15 @@ function readData() {
   return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
 }
 
+function backupCurrentData() {
+  ensureDataDir();
+  const backupName = `backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  const backupPath = path.join(DATA_DIR, backupName);
+  const currentData = readData();
+  fs.writeFileSync(backupPath, JSON.stringify(currentData, null, 2));
+  return { backupName, backupPath };
+}
+
 function writeData(data) {
   data.lastUpdated = new Date().toISOString();
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
@@ -105,6 +114,7 @@ module.exports = {
   ensureDataDir,
   initDataFile,
   readData,
+  backupCurrentData,
   writeData,
   normalizeTags,
   calculateStageTime,
