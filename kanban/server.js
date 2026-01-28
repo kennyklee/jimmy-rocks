@@ -465,17 +465,31 @@ app.post('/api/items/:id/comments', (req, res) => {
       item.comments.push(comment);
       writeData(data);
       
-      // Create notification if @jimmy, @pm, @dev, or @qa is mentioned
-      if (/@(jimmy|pm|dev|qa)\b/i.test(text)) {
-        addNotification('mention_jimmy', {
+      // Detect agent mentions (@pm/@claude->pm, @dev/@codex->dev, @qa/@gemini->qa)
+      const mentionMap = {
+        jimmy: "pm", pm: "pm", claude: "pm",
+        dev: "dev", codex: "dev",
+        qa: "qa", gemini: "qa"
+      };
+      const mentionRegex = /@(jimmy|pm|claude|dev|codex|qa|gemini)\b/gi;
+      const mentions = [...text.matchAll(mentionRegex)].map(m => mentionMap[m[1].toLowerCase()]);
+      const uniqueAgents = [...new Set(mentions)];
+      
+      for (const agent of uniqueAgents) {
+        addNotification('mention_agent', {
           itemId: item.id,
           itemNumber: item.number,
           itemTitle: item.title,
           commentId: comment.id,
           commentText: text,
           commentedAt: comment.createdAt,
-          author: author
+          author: author,
+          targetAgent: agent
         });
+      }
+      
+      if (uniqueAgents.length > 0) {
+        // Already notified agents, skip kenny_comment
       }
       // Create notification if Kenny comments (notify Jimmy)
       else if (author === 'kenny') {
