@@ -7,6 +7,29 @@ import { pushUndo } from "./undo.js";
 // SortableJS instances
 let sortableInstances = [];
 
+// Debounced move handling to prevent rapid save spam
+let moveItemDebounceTimer = null;
+let pendingMoveArgs = null;
+
+function scheduleMoveItem(itemId, toColumnId, newIndex, user) {
+  pendingMoveArgs = { itemId, toColumnId, newIndex, user };
+
+  if (moveItemDebounceTimer) clearTimeout(moveItemDebounceTimer);
+
+  moveItemDebounceTimer = setTimeout(() => {
+    if (!pendingMoveArgs) return;
+
+    const { itemId, toColumnId, newIndex, user } = pendingMoveArgs;
+    pendingMoveArgs = null;
+    moveItemDebounceTimer = null;
+
+    // API call in background - only refresh on error (rollback)
+    api.moveItem(itemId, toColumnId, newIndex, user).catch(() => {
+      refreshBoard();
+    });
+  }, 400);
+}
+
 // Will be set by main.js
 let openItemDetailFn = null;
 
@@ -89,10 +112,7 @@ export function setupDragAndDrop() {
         // Signal recent move to prevent auto-refresh flash
         window.lastKanbanMove = Date.now();
 
-        // API call in background - only refresh on error (rollback)
-        api.moveItem(itemId, toColumnId, newIndex, currentUser).catch(() => {
-          refreshBoard();
-        });
+        scheduleMoveItem(itemId, toColumnId, newIndex, currentUser);
       },
     });
 
