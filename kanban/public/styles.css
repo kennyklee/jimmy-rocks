@@ -1710,3 +1710,4 @@ form {
 #item-tags {
   min-height: 120px;
 }
+.item.selected { outline: 2px solid #007bff; background: #e7f1ff; }

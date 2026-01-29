@@ -714,7 +714,7 @@ function setupDragAndDrop() {
   });
 }
 
-function handleItemClick(e) {
+function handleItemClick(e) { document.querySelectorAll(".item.selected").forEach(el => el.classList.remove("selected")); e.currentTarget.classList.add("selected");
   const itemId = e.currentTarget.dataset.itemId;
   
   for (const col of boardData.columns) {
