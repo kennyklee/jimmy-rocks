@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
-router.use('/board', require('./board'));
-router.use('/notifications', require('./notifications'));
-router.use('/events', require('./events'));
-router.use('/settings', require('./settings'));
+const boardRoutes = require('./board');
+const notificationRoutes = require('./notifications');
+const eventsRoutes = require('./events');
+const settingsRoutes = require('./settings');
+
+// Mount board routes directly (not nested under /board)
+router.use('/', boardRoutes);
+router.use('/', notificationRoutes);
+router.use('/', eventsRoutes);
+router.use('/settings', settingsRoutes);
 
 module.exports = router;
