@@ -655,7 +655,8 @@ function setupDragAndDrop() {
   
   // Add click handlers to items
   document.querySelectorAll('.item').forEach(item => {
-    item.addEventListener('click', handleItemClick);
+    item.removeEventListener("click", handleItemClick);
+    item.addEventListener("click", handleItemClick);
   });
   
   // Initialize SortableJS on each column

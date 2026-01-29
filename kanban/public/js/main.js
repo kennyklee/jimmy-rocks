@@ -15,6 +15,15 @@ import { setupDragAndDrop, setDndDependencies } from './dnd.js';
 import { initFilters, filterCards, updateTagFilterOptions, getActiveTagFilter } from './filters.js';
 import { initMentions } from './mentions.js';
 
+// Helper function to format date for input[type="date"]
+function formatDateInputValue(dateValue) {
+  if (!dateValue) return '';
+  const date = new Date(dateValue);
+  if (isNaN(date.getTime())) return '';
+  // Format as YYYY-MM-DD for date input
+  return date.toISOString().split('T')[0];
+}
+
 // DOM Elements
 const userSelect = document.getElementById('user-select');
 const searchInput = document.getElementById('search-input');
