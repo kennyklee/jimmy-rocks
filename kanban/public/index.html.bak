@@ -17,7 +17,6 @@
     <header class="header">
       <div class="header-left">
         <h1 class="logo">Board</h1>
-<a href="https://github.com/kennyklee/jimmy-rocks" class="github-link" target="_blank" title="GitHub Repo" style="margin-left: 12px; font-size: 1.8em; vertical-align: middle; text-decoration: none;">🐙</a>
         <span class="subtitle">Kenny & Jimmy</span>
         <input type="text" id="search-input" class="search-input" placeholder="Search...">
         <div class="tag-filter-wrapper">
