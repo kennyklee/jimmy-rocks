@@ -669,9 +669,9 @@ function setupDragAndDrop() {
       forceAutoScrollFallback: true,
       animation: 150,
       ghostClass: 'dragging',
-      delay: 150,
+      delay: 0,
       delayOnTouchOnly: true,
-      touchStartThreshold: 5,
+      touchStartThreshold: 10,
       
       onStart: function(evt) {
         evt.item.classList.add('dragging');
