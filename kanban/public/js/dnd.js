@@ -122,6 +122,9 @@ export function setupDragAndDrop() {
 
 function handleItemClick(e) {
   const itemId = e.currentTarget.dataset.itemId;
+  // Update selection state
+  document.querySelectorAll(".item.keyboard-selected").forEach(el => el.classList.remove("keyboard-selected"));
+  e.currentTarget.classList.add("keyboard-selected");
 
   for (const col of boardData.columns) {
     const item = col.items.find((i) => i.id === itemId);
