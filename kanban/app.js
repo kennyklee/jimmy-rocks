@@ -11,9 +11,7 @@ const { initEventsFile } = require('./lib/events');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Routes
-const boardRoutes = require('./routes/board');
-const notificationRoutes = require('./routes/notifications');
-const eventsRoutes = require('./routes/events');
+const apiRoutes = require('./routes');
 
 // Initialize
 initDataFile();
@@ -28,9 +26,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Mount API routes
-app.use('/api', boardRoutes);
-app.use('/api', notificationRoutes);
-app.use('/api', eventsRoutes);
+app.use('/api', apiRoutes);
 
 // 404 handler for unmatched API routes
 app.use('/api', notFoundHandler);
