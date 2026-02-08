@@ -31,7 +31,10 @@ export function filterCards() {
     if (q) {
       const titleMatch = itemData.title.toLowerCase().includes(q);
       const descMatch = (itemData.description || '').toLowerCase().includes(q);
-      textMatch = titleMatch || descMatch;
+      // Support #number search (strip # prefix)
+      const numQuery = q.startsWith('#') ? q.slice(1) : null;
+      const numMatch = numQuery && itemData.number !== undefined && String(itemData.number) === numQuery;
+      textMatch = titleMatch || descMatch || numMatch;
     }
     
     // Tag filter match
